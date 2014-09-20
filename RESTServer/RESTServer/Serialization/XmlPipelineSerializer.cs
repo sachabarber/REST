@@ -42,12 +42,10 @@ namespace RESTServer.Serialization
         private Stream GenerateStreamFromString(string s)
         {
             MemoryStream stream = new MemoryStream();
-            using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8))
-            {
-                writer.Write(s);
-                writer.Flush();
-                stream.Position = 0;
-            }
+            StreamWriter writer = new StreamWriter(stream, Encoding.UTF8);
+            writer.Write(s);
+            writer.Flush();
+            stream.Position = 0;
             return stream;
         }
     }

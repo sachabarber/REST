@@ -18,12 +18,12 @@ namespace RESTServerConsoleHost.IOC
             container.Register(Component
                 .For(typeof(IRepository<Person,int>))
                 .ImplementedBy(typeof(InMemoryPersonRepository))
-                .LifestyleTransient());
+                .LifestyleSingleton());
 
             container.Register(Component
                 .For(typeof(IRepository<Account,int>))
                 .ImplementedBy(typeof(InMemoryAccountRepository))
-                .LifestyleTransient());
+                .LifestyleSingleton());
         }
     }
 }

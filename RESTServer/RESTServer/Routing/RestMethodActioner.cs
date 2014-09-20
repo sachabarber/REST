@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using RESTServer.Serialization;
 
@@ -15,14 +16,46 @@ namespace RESTServer.Routing
         private ISerializer jsonPipelineSerializer = new JsonPipelineSerializer();
 
 
+        public bool IsUrlMatch(string baseRoute, string requestUrl, string httpMethod)
+        {
+            string restToken = baseRoute.Replace(@"/", "");
+            string pattern = string.Format("^(\\/{0}\\/)([1-9]+[0-9]*)$", restToken);
+            Regex regEx = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            Match m = regEx.Match(requestUrl);
+
+
+            if (httpMethod == "POST")
+            {
+                return requestUrl == baseRoute;
+            }
+
+            if (httpMethod == "GET")
+            {
+                bool validRoute1 = requestUrl == baseRoute;
+                bool validRoute2 = m.Success;
+                return validRoute1 || validRoute2;
+            }
+
+            if (httpMethod == "PUT" || httpMethod == "DELETE")
+            {
+                bool validRoute1 = requestUrl == baseRoute;
+                bool validRoute2 = m.Success;
+                return validRoute1 || validRoute2;
+            }
+
+            return false;
+        }
+
+
+
         public bool IsGetAll(HttpListenerRequest request)
         {
-            return request.RawUrl.EndsWith(@"/");
+            return !char.IsDigit(request.RawUrl.Last());
+
         }
 
         public T ExtractContent<T>(HttpListenerRequest request, SerializationToUse serializationToUse)
         {
-            request.InputStream.Position = 0;
             using (StreamReader sr = new StreamReader(request.InputStream))
             {
                 string rawData = sr.ReadToEnd();

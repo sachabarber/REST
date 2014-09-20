@@ -11,5 +11,11 @@ namespace Models
         public int Id { get; set; }
         public string AccountNumber { get; set; }
         public string SortCode { get; set; }
+
+        public override string ToString()
+        {
+            return string.Format("Id: {0}, AccountNumber: {1}, SortCode: {2}", 
+                Id, AccountNumber, SortCode);
+        }
     }
 }

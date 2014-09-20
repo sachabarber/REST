@@ -24,17 +24,14 @@ namespace RESTClientConsoleApp
             return result;
         }
 
-        public string Serialize<T>(T item)
+        public Byte[] Serialize<T>(T item)
         {
             xmlSerializer = new XmlSerializer(typeof(T));
             using (MemoryStream ms = new MemoryStream())
             {
                 xmlSerializer.Serialize(ms, item);
                 ms.Position = 0;
-                using (StreamReader sr = new StreamReader(ms))
-                {
-                    return sr.ReadToEnd();
-                }
+                return ms.ToArray();
             }
         }
 

@@ -26,15 +26,19 @@ namespace RESTClientConsoleApp
             //Test out PersonHandler server side REST handler, expects XML
 
             //GET
-            personClient.GetPerson(1);
+            //personClient.GetPerson(1);
+            //personClient.GetPeople();
+            personClient.PostPerson();
             personClient.GetPeople();
+            
+            ////Test out PersonHandler server side REST handler, expects JSON
+
+            ////GET
+            //accountClient.GetAccount(1);
+            //accountClient.GetAccounts();
 
 
-            //Test out PersonHandler server side REST handler, expects JSON
-
-            //GET
-            accountClient.GetAccount(1);
-            accountClient.GetAccounts();
+            Console.ReadLine();
 
         }
 

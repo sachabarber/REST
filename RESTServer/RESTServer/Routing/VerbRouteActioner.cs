@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Net;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using RESTServer.Handlers;
 using RESTServer.Serialization;
@@ -14,6 +15,9 @@ namespace RESTServer.Routing
     public class VerbRouteActioner : RouteActioner
     {
         RestMethodActioner restMethodActioner = new RestMethodActioner();
+
+
+
 
 
         public override async Task<bool> ActionRequest(HttpListenerContext context, IEnumerable<IHandler> handlers)
@@ -34,8 +38,9 @@ namespace RESTServer.Routing
                 var routeBase = (RouteBaseAttribute[])handler.GetType().GetCustomAttributes(typeof(RouteBaseAttribute), false);
                 if (routeBase.Length > 0)
                 {
-                    bool isUrlMatch = url.StartsWith(routeBase[0].UrlBase);
-                    if(isUrlMatch)
+                    bool isBaseMatch = url.StartsWith(routeBase[0].UrlBase);
+                    bool isUrlMatch = restMethodActioner.IsUrlMatch(routeBase[0].UrlBase, url, httpMethod);
+                    if (isBaseMatch && isUrlMatch)
                     {
                         serializationToUse = routeBase[0].SerializationToUse;
                         matchingHandler = handler;
@@ -86,6 +91,7 @@ namespace RESTServer.Routing
                 case "PUT":
                     break;
                 case "POST":
+                    result = await HandlePost<T, TKey>(actualHandler, context, serializationToUse);
                     break;
                 case "DELETE":
                     break;
@@ -112,7 +118,15 @@ namespace RESTServer.Routing
                 result = await SetResponse<T>(context, item, serializationToUse);
             }
 
-            return true;
+            return result;
+        }
+
+        private async Task<bool> HandlePost<T, TKey>(IVerbHandler<T, TKey> actualHandler, HttpListenerContext context, SerializationToUse serializationToUse)
+        {
+            T item = restMethodActioner.ExtractContent<T>(context.Request,serializationToUse);
+            T itemAdded = await actualHandler.Post(item);
+            bool result = await SetResponse<T>(context, itemAdded, serializationToUse);
+            return result;
         }
 
 
