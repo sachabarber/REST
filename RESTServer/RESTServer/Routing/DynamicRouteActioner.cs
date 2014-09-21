@@ -13,7 +13,7 @@ namespace RESTServer.Routing
 
 
 
-        public override async Task<bool> ActionRequest(System.Net.HttpListenerContext context, IEnumerable<IHandler> handlers)
+        public override async Task<bool> ActionRequest(System.Net.HttpListenerContext context, IList<IHandler> handlers)
         {
             object handler = null;
 

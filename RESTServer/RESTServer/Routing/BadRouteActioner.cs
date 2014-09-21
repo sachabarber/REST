@@ -14,7 +14,7 @@ namespace RESTServer.Routing
 
 
 
-        public override async Task<bool> ActionRequest(System.Net.HttpListenerContext context, IEnumerable<IHandler> handlers)
+        public override async Task<bool> ActionRequest(System.Net.HttpListenerContext context, IList<IHandler> handlers)
         {
             HttpListenerResponse response = context.Response;
             using (System.IO.Stream output = response.OutputStream)

@@ -84,7 +84,7 @@ namespace RESTServer
             dynamicRouteActioner.Successor = badRouteActioner;
 
 
-            var handlers = dependencyResolver.GetServices(typeof(IHandler)).Cast<IHandler>();
+            var handlers = dependencyResolver.GetServices(typeof(IHandler)).Cast<IHandler>().ToList();
 
 
             await verbRouteActioner.ActionRequest(context, handlers);

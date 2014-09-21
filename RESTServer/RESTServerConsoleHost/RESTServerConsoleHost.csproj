@@ -67,6 +67,10 @@
       <Project>{eebb0299-e04c-4366-97aa-dbbe57f6de7d}</Project>
       <Name>Models</Name>
     </ProjectReference>
+    <ProjectReference Include="..\RESTServer.Utils\RESTServer.Utils.csproj">
+      <Project>{08d1e3c2-5ef0-4790-9ac6-e019526e9ead}</Project>
+      <Name>RESTServer.Utils</Name>
+    </ProjectReference>
     <ProjectReference Include="..\RESTServer\RESTServer.csproj">
       <Project>{46d00f74-af97-4298-81d8-37b982ce912c}</Project>
       <Name>RESTServer</Name>

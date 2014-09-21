@@ -8,6 +8,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Models;
 using Newtonsoft.Json;
+using RESTServer.Utils.Client;
+using RESTServer.Utils.Serialization;
 
 namespace RESTClientConsoleApp
 {
@@ -22,17 +24,17 @@ namespace RESTClientConsoleApp
         /// </summary>
         public void GetPerson(int id)
         {
-            using (WebClient client = new WebClient())
+            using (RESTWebClient client = new RESTWebClient())
             {
                 string getUrl = string.Format("http://localhost:8001/people/{0}", id);
-                string response = client.DownloadString(getUrl);
 
                 //the server PersonHandler [RouteBaseAttribute] is set to return Xml, 
                 //so we need to deserialize it as Xml 
-                Person person = serializer.Deserialize<Person>(response);
+                var response = client.Get<Person>(getUrl, SerializationToUse.Xml);
                 Console.WriteLine("Http : GET/{id}");
+                Console.WriteLine("Status Code : {0}", response.StatusCode);
                 Console.WriteLine(getUrl);
-                Console.WriteLine(person);
+                Console.WriteLine(response.Content);
                 Console.WriteLine("=================================");
             }
         }
@@ -44,17 +46,17 @@ namespace RESTClientConsoleApp
         /// </summary>
         public void GetPeople()
         {
-            using (WebClient client = new WebClient())
+            using (RESTWebClient client = new RESTWebClient())
             {
                 string getUrl = "http://localhost:8001/people";
-                string response = client.DownloadString(getUrl);
 
                 //the server PersonHandler [RouteBaseAttribute] is set to return Xml, 
                 //so we need to deserialize it as Xml 
-                List<Person> people = serializer.Deserialize<List<Person>>(response);
+                var response = client.Get<List<Person>>(getUrl, SerializationToUse.Xml);
                 Console.WriteLine("Http : GET");
+                Console.WriteLine("Status Code : {0}", response.StatusCode);
                 Console.WriteLine(getUrl);
-                Console.WriteLine(people.Count);
+                Console.WriteLine(response.Content.Count);
                 Console.WriteLine("=================================");
             }
         }
@@ -64,25 +66,20 @@ namespace RESTClientConsoleApp
         /// </summary>
         public void PostPerson()
         {
-            using (WebClient client = new WebClient())
+            using (RESTWebClient client = new RESTWebClient())
             {
                 string postUrl = "http://localhost:8001/people";
-                client.Headers.Add("Content-Type", "application/xml");
-                //the server PersonHandler [RouteBaseAttribute] is set to return Xml, 
-                //so we need to deserialize it as Xml 
                 Person newPerson = new Person();
                 newPerson.FirstName = string.Format("FirstName_{0}", DateTime.Now.Ticks);
                 newPerson.LastName = string.Format("LastName_{0}", DateTime.Now.Ticks);
-                byte[] responsebytes = client.UploadData(postUrl, "POST",
-                    serializer.Serialize(newPerson));
-                string responsebody = Encoding.UTF8.GetString(responsebytes);
-
+                
                 //the server PersonHandler [RouteBaseAttribute] is set to return Xml, 
                 //so we need to deserialize it as Xml 
-                Person person = serializer.Deserialize<Person>(responsebody);
+                var response = client.Post<Person>(postUrl, newPerson, SerializationToUse.Xml);
                 Console.WriteLine("Http : POST");
+                Console.WriteLine("Status Code : {0}", response.StatusCode);
                 Console.WriteLine(postUrl);
-                Console.WriteLine(person);
+                Console.WriteLine(response.Content);
                 Console.WriteLine("=================================");
 
             }

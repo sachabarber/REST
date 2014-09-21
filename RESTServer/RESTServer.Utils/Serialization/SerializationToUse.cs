@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RESTServer.Serialization
+namespace RESTServer.Utils.Serialization
 {
     public enum SerializationToUse
     {

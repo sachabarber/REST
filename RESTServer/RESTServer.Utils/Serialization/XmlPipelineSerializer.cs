@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 
-namespace RESTServer.Serialization
+namespace RESTServer.Utils.Serialization
 {
     public class XmlPipelineSerializer : ISerializer
     {
@@ -23,6 +23,18 @@ namespace RESTServer.Serialization
             }
             return result;
         }
+
+        public Byte[] SerializeAsBytes<T>(T item)
+        {
+            xmlSerializer = new XmlSerializer(typeof(T));
+            using (MemoryStream ms = new MemoryStream())
+            {
+                xmlSerializer.Serialize(ms, item);
+                ms.Position = 0;
+                return ms.ToArray();
+            }
+        }
+
 
         public string Serialize<T>(T item)
         {

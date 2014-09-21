@@ -5,10 +5,9 @@ using System.Linq.Expressions;
 using System.Net;
 using System.Reflection;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using RESTServer.Handlers;
-using RESTServer.Serialization;
+using RESTServer.Utils.Serialization;
 
 namespace RESTServer.Routing
 {
@@ -16,11 +15,7 @@ namespace RESTServer.Routing
     {
         RestMethodActioner restMethodActioner = new RestMethodActioner();
 
-
-
-
-
-        public override async Task<bool> ActionRequest(HttpListenerContext context, IEnumerable<IHandler> handlers)
+        public override async Task<bool> ActionRequest(HttpListenerContext context, IList<IHandler> handlers)
         {
             object matchingHandler = null;
 
@@ -35,16 +30,24 @@ namespace RESTServer.Routing
 
             foreach (var handler in handlers)
             {
-                var routeBase = (RouteBaseAttribute[])handler.GetType().GetCustomAttributes(typeof(RouteBaseAttribute), false);
-                if (routeBase.Length > 0)
+
+
+                if(handler.GetType().GetInterfaces().Any(x => x.Name == typeof (IVerbHandler<,>).Name))
                 {
-                    bool isBaseMatch = url.StartsWith(routeBase[0].UrlBase);
-                    bool isUrlMatch = restMethodActioner.IsUrlMatch(routeBase[0].UrlBase, url, httpMethod);
-                    if (isBaseMatch && isUrlMatch)
+
+
+                    var routeBase =
+                        (RouteBaseAttribute[]) handler.GetType().GetCustomAttributes(typeof (RouteBaseAttribute), false);
+                    if (routeBase.Length > 0)
                     {
-                        serializationToUse = routeBase[0].SerializationToUse;
-                        matchingHandler = handler;
-                        break;
+                        bool isBaseMatch = url.StartsWith(routeBase[0].UrlBase);
+                        bool isUrlMatch = restMethodActioner.IsUrlMatch(routeBase[0].UrlBase, url, httpMethod);
+                        if (isBaseMatch && isUrlMatch)
+                        {
+                            serializationToUse = routeBase[0].SerializationToUse;
+                            matchingHandler = handler;
+                            break;
+                        }
                     }
                 }
             }
@@ -71,8 +74,6 @@ namespace RESTServer.Routing
             }
         }
 
-
-
         private async Task<bool> DispatchToHandler<T, TKey>(HttpListenerContext context, object handler,
             string httpMethod, SerializationToUse serializationToUse)
         {
@@ -97,10 +98,7 @@ namespace RESTServer.Routing
                     break;
             }
             return result;
-
         }
-
-
 
         private async Task<bool> HandleGet<T, TKey>(IVerbHandler<T, TKey> actualHandler, HttpListenerContext context, SerializationToUse serializationToUse)
         {
@@ -129,7 +127,6 @@ namespace RESTServer.Routing
             return result;
         }
 
-
         private async Task<bool> SetResponse<T>(HttpListenerContext context,T result, SerializationToUse serializationToUse)
         {
             HttpListenerResponse response = context.Response;
@@ -145,9 +142,6 @@ namespace RESTServer.Routing
             return true;
         }
 
-
-
-
         private IVerbHandler<T, TKey> CreateVerbHandler<T, TKey>(object item)
         {
             Expression convertExpr = Expression.Convert(
@@ -158,17 +152,12 @@ namespace RESTServer.Routing
             return x;
         }
 
-
-
         private Type[] GetVerbHandlerGenericArgs(Type item)
         {
 
             var ints = item.GetInterfaces();
-            var verbInterface = item.GetInterfaces().Where(x => x.FullName.Contains("IVerbHandler")).Single();
+            var verbInterface = item.GetInterfaces().Single(x => x.FullName.Contains("IVerbHandler"));
             return verbInterface.GenericTypeArguments;
         }
-
-
-        
     }
 }

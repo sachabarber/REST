@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 2013
+VisualStudioVersion = 12.0.30501.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTServer", "RESTServer\RESTServer.csproj", "{46D00F74-AF97-4298-81D8-37B982CE912C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTServerConsoleHost", "RESTServerConsoleHost\RESTServerConsoleHost.csproj", "{37D79150-9C9F-40DA-81EB-3F97AAA6A1AC}"
@@ -8,6 +10,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Models", "Models\Models.csproj", "{EEBB0299-E04C-4366-97AA-DBBE57F6DE7D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTClientConsoleApp", "RESTClientConsoleApp\RESTClientConsoleApp.csproj", "{EC5A606D-A479-4552-BDB2-B55E70C915DB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTServer.Utils", "RESTServer.Utils\RESTServer.Utils.csproj", "{08D1E3C2-5EF0-4790-9AC6-E019526E9EAD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -31,6 +35,10 @@ Global
 		{EC5A606D-A479-4552-BDB2-B55E70C915DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EC5A606D-A479-4552-BDB2-B55E70C915DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EC5A606D-A479-4552-BDB2-B55E70C915DB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{08D1E3C2-5EF0-4790-9AC6-E019526E9EAD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{08D1E3C2-5EF0-4790-9AC6-E019526E9EAD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{08D1E3C2-5EF0-4790-9AC6-E019526E9EAD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{08D1E3C2-5EF0-4790-9AC6-E019526E9EAD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

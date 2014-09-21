@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Models;
 using RESTServer;
 using RESTServer.Handlers;
-using RESTServer.Serialization;
+using RESTServer.Utils.Serialization;
 using RESTServerConsoleHost.Repositories;
 
 namespace RESTServerConsoleHost.Handlers

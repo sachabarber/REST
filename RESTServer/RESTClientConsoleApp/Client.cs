@@ -28,15 +28,17 @@ namespace RESTClientConsoleApp
             //GET
             //personClient.GetPerson(1);
             //personClient.GetPeople();
-            personClient.PostPerson();
-            personClient.GetPeople();
+            //personClient.PostPerson();
+            //personClient.GetPeople();
             
             ////Test out PersonHandler server side REST handler, expects JSON
 
             ////GET
-            //accountClient.GetAccount(1);
-            //accountClient.GetAccounts();
-
+            accountClient.GetAccount(1);
+            accountClient.GetAccounts();
+            accountClient.PostAccount();
+            accountClient.GetAccounts();
+            
 
             Console.ReadLine();
 
