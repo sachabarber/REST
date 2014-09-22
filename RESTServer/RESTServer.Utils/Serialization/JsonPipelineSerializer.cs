@@ -11,12 +11,16 @@ namespace RESTServer.Utils.Serialization
 {
     public class JsonPipelineSerializer : ISerializer
     {
-        public T Deserialize<T>(string rawBodyData)
+        public async Task<T> Deserialize<T>(string rawBodyData)
         {
             return JsonConvert.DeserializeObject<T>(rawBodyData);
         }
 
-        public string Serialize<T>(T item)
+        public async Task<Byte[]> SerializeAsBytes<T>(T item)
+        {
+            return Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(item));
+        }
+        public async Task<string> Serialize<T>(T item)
         {
             return JsonConvert.SerializeObject(item);
         }

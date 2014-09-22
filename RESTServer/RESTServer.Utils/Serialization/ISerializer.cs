@@ -8,7 +8,7 @@ namespace RESTServer.Utils.Serialization
 {
     public interface ISerializer
     {
-        T Deserialize<T>(string rawBodyData);
-        string Serialize<T>(T item);
+        Task<T> Deserialize<T>(string rawBodyData);
+        Task<string> Serialize<T>(T item);
     }
 }

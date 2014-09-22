@@ -15,14 +15,11 @@ namespace RESTClientConsoleApp
 {
     public class PersonClient
     {
-        private XmlPipelineSerializer serializer = new XmlPipelineSerializer();
-
-
         /// <summary>
         /// Http : GET/{id}
         /// Gets item with the id specified
         /// </summary>
-        public void GetPerson(int id)
+        public async Task GetPerson(int id)
         {
             using (RESTWebClient client = new RESTWebClient())
             {
@@ -30,7 +27,7 @@ namespace RESTClientConsoleApp
 
                 //the server PersonHandler [RouteBaseAttribute] is set to return Xml, 
                 //so we need to deserialize it as Xml 
-                var response = client.Get<Person>(getUrl, SerializationToUse.Xml);
+                var response = await client.Get<Person>(getUrl, SerializationToUse.Xml);
                 Console.WriteLine("Http : GET/{id}");
                 Console.WriteLine("Status Code : {0}", response.StatusCode);
                 Console.WriteLine(getUrl);
@@ -44,7 +41,7 @@ namespace RESTClientConsoleApp
         /// Http : GET
         /// Gets all items in the collection
         /// </summary>
-        public void GetPeople()
+        public async Task GetPeople()
         {
             using (RESTWebClient client = new RESTWebClient())
             {
@@ -52,7 +49,7 @@ namespace RESTClientConsoleApp
 
                 //the server PersonHandler [RouteBaseAttribute] is set to return Xml, 
                 //so we need to deserialize it as Xml 
-                var response = client.Get<List<Person>>(getUrl, SerializationToUse.Xml);
+                var response = await client.Get<List<Person>>(getUrl, SerializationToUse.Xml);
                 Console.WriteLine("Http : GET");
                 Console.WriteLine("Status Code : {0}", response.StatusCode);
                 Console.WriteLine(getUrl);
@@ -64,7 +61,7 @@ namespace RESTClientConsoleApp
         /// <summary>
         /// Http : POST
         /// </summary>
-        public void PostPerson()
+        public async Task PostPerson()
         {
             using (RESTWebClient client = new RESTWebClient())
             {
@@ -75,7 +72,7 @@ namespace RESTClientConsoleApp
                 
                 //the server PersonHandler [RouteBaseAttribute] is set to return Xml, 
                 //so we need to deserialize it as Xml 
-                var response = client.Post<Person>(postUrl, newPerson, SerializationToUse.Xml);
+                var response = await client.Post<Person>(postUrl, newPerson, SerializationToUse.Xml);
                 Console.WriteLine("Http : POST");
                 Console.WriteLine("Status Code : {0}", response.StatusCode);
                 Console.WriteLine(postUrl);
@@ -84,5 +81,94 @@ namespace RESTClientConsoleApp
 
             }
         }
+
+
+        /// <summary>
+        /// Http : PUT
+        /// </summary>
+        public async Task PutPerson()
+        {
+            using (RESTWebClient client = new RESTWebClient())
+            {
+
+                Console.WriteLine("OBTAINING people/1");
+                string getUrl = string.Format("http://localhost:8001/people/{0}", 1);
+
+                //the server PersonHandler [RouteBaseAttribute] is set to return Xml, 
+                //so we need to deserialize it as Xml 
+                var response = await client.Get<Person>(getUrl, SerializationToUse.Xml);
+                var person = response.Content;
+                Console.WriteLine(person);
+
+                string newLastName = string.Format("{0}_Modified_{1}", person.LastName, DateTime.Now.Ticks);
+                person.LastName = newLastName;
+
+                string putUrl = string.Format("http://localhost:8001/people/{0}", 1);
+
+                //the server PersonHandler [RouteBaseAttribute] is set to return Xml, 
+                //so we need to deserialize it as Xml 
+                var statusCode = await client.Put(putUrl, person, SerializationToUse.Xml);
+                Console.WriteLine("Http : PUT");
+                Console.WriteLine("Status Code : {0}", statusCode);
+                Console.WriteLine(putUrl);
+
+                if (statusCode == HttpStatusCode.OK)
+                {
+                    Console.WriteLine("OBTAINING people/1 again");
+                    response = await client.Get<Person>(getUrl, SerializationToUse.Xml);
+                    person = response.Content;
+                    Console.WriteLine(person);
+                    
+                }
+                else
+                {
+                    Console.WriteLine("PUT Failed");
+                }
+                Console.WriteLine("=================================");
+            }
+        }
+
+        /// <summary>
+        /// Http : DELETE
+        /// </summary>
+        public async Task DeletePerson()
+        {
+            using (RESTWebClient client = new RESTWebClient())
+            {
+
+                Console.WriteLine("OBTAINING people");
+                string getUrl = string.Format("http://localhost:8001/people");
+
+                //the server PersonHandler [RouteBaseAttribute] is set to return Xml, 
+                //so we need to deserialize it as Xml 
+                var response = await client.Get<List<Person>>("http://localhost:8001/people", SerializationToUse.Xml);
+                Console.WriteLine("There are currently {0} people", response.Content.Count);
+
+                string deleteUrl = string.Format("http://localhost:8001/people/{0}", 1);
+
+                var statusCode = await client.Delete(deleteUrl);
+                Console.WriteLine("Http : DELETE");
+                Console.WriteLine("Status Code : {0}", statusCode);
+                Console.WriteLine(deleteUrl);
+
+                if (statusCode == HttpStatusCode.OK)
+                {
+                    Console.WriteLine("OBTAINING people again");
+                    //the server PersonHandler [RouteBaseAttribute] is set to return Xml, 
+                    //so we need to deserialize it as Xml 
+                    response = await client.Get<List<Person>>("http://localhost:8001/people", SerializationToUse.Xml);
+                    Console.WriteLine("There are currently {0} people", response.Content.Count);
+
+                }
+                else
+                {
+                    Console.WriteLine("DELETE Failed");
+                }
+                Console.WriteLine("=================================");
+            }
+        }
+
+
+    
     }
 }

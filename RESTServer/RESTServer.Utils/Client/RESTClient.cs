@@ -13,7 +13,7 @@ namespace RESTServer.Utils.Client
     {
         private WebRequest request = null;
         private XmlPipelineSerializer xmlPipelineSerializer = new XmlPipelineSerializer();
-
+        private JsonPipelineSerializer jsonPipelineSerializer = new JsonPipelineSerializer();
 
         protected override WebRequest GetWebRequest(Uri address)
         {
@@ -27,67 +27,65 @@ namespace RESTServer.Utils.Client
             return this.request;
         }
 
-        public RESTResponse<T> Get<T>(string url, SerializationToUse serializationToUse)
+        public async Task<RESTResponse<T>> Get<T>(string url, SerializationToUse serializationToUse)
         {
             string response = DownloadString(url);
+            return await CreateResponse<T>(response, serializationToUse);
+        }
 
+        public async Task<RESTResponse<T>> Post<T>(string url, T item, SerializationToUse serializationToUse)
+        {
+            byte[] responsebytes = await UploadDataForMethod(url, "POST", item, serializationToUse);
+            string responsebody = string.Empty;
             if (serializationToUse == SerializationToUse.Xml)
             {
-                return new RESTResponse<T>()
-                {
-                    Content = xmlPipelineSerializer.Deserialize<T>(response),
-                    StatusCode = StatusCode()
-                };
+                responsebody = Encoding.UTF8.GetString(responsebytes);
             }
             if (serializationToUse == SerializationToUse.Json)
             {
-                return new RESTResponse<T>()
-                {
-                    Content = JsonConvert.DeserializeObject<T>(response),
-                    StatusCode = StatusCode()
-                };
+                responsebody = Encoding.UTF8.GetString(responsebytes);
             }
-    
-            
-            throw new InvalidOperationException("You need to specify either Xml or Json serialization");
+            return await CreateResponse<T>(responsebody, serializationToUse);
+        }
 
+        public async Task<HttpStatusCode> Delete(string url)
+        {
+            var request = WebRequest.Create(url);
+            request.Method = "DELETE";
+            var response = await request.GetResponseAsync();
+            return ((HttpWebResponse)response).StatusCode;
         }
 
 
-        public RESTResponse<T> Post<T>(string url, T item, SerializationToUse serializationToUse)
+        public async Task<HttpStatusCode> Put<T>(string url, T item, SerializationToUse serializationToUse)
+        {
+            await UploadDataForMethod(url, "PUT", item, serializationToUse);
+            return await StatusCode();
+        }
+
+
+
+
+        private async Task<byte[]> UploadDataForMethod<T>(string url, string httpMethod, T item, SerializationToUse serializationToUse)
         {
             if (serializationToUse == SerializationToUse.Xml)
             {
                 Headers.Add("Content-Type", "application/xml");
-                byte[] responsebytes = UploadData(url, "POST",
-                  xmlPipelineSerializer.SerializeAsBytes(item));
-                string responsebody = Encoding.UTF8.GetString(responsebytes);
-
-                return new RESTResponse<T>()
-                {
-                    Content = xmlPipelineSerializer.Deserialize<T>(responsebody),
-                    StatusCode = StatusCode()
-                };
+                var serialized = await xmlPipelineSerializer.SerializeAsBytes(item);
+                return UploadData(url, httpMethod, serialized);
             }
             if (serializationToUse == SerializationToUse.Json)
             {
                 Headers.Add("Content-Type", "application/json");
-                byte[] responsebytes = UploadData(url, "POST",
-                  Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(item)));
-                string responsebody = Encoding.UTF8.GetString(responsebytes);
-
-                return new RESTResponse<T>()
-                {
-                    Content = JsonConvert.DeserializeObject<T>(responsebody),
-                    StatusCode = StatusCode()
-                };
+                var serialized = await jsonPipelineSerializer.SerializeAsBytes(item);
+                return UploadData(url, "PUT", serialized);
             }
-
-
             throw new InvalidOperationException("You need to specify either Xml or Json serialization");
+
         }
 
-        private HttpStatusCode StatusCode()
+
+        private async Task<HttpStatusCode> StatusCode()
         {
             HttpStatusCode result;
 
@@ -111,5 +109,27 @@ namespace RESTServer.Utils.Client
 
             return result;
         }
+
+        private async Task<RESTResponse<T>> CreateResponse<T>(string response, SerializationToUse serializationToUse)
+        {
+            if (serializationToUse == SerializationToUse.Xml)
+            {
+                return new RESTResponse<T>()
+                {
+                    Content = await xmlPipelineSerializer.Deserialize<T>(response),
+                    StatusCode = await StatusCode()
+                };
+            }
+            if (serializationToUse == SerializationToUse.Json)
+            {
+                return new RESTResponse<T>()
+                {
+                    Content = await jsonPipelineSerializer.Deserialize<T>(response),
+                    StatusCode = await StatusCode()
+                };
+            }
+            throw new InvalidOperationException("You need to specify either Xml or Json serialization");
+        }
+
     }
 }

@@ -90,11 +90,13 @@ namespace RESTServer.Routing
                     result = await HandleGet<T, TKey>(actualHandler, context, serializationToUse);
                     break;
                 case "PUT":
+                    result = await HandlePut<T, TKey>(actualHandler, context, serializationToUse);
                     break;
                 case "POST":
                     result = await HandlePost<T, TKey>(actualHandler, context, serializationToUse);
                     break;
                 case "DELETE":
+                    result = await HandleDelete<T,TKey>(actualHandler, context, serializationToUse);
                     break;
             }
             return result;
@@ -121,10 +123,36 @@ namespace RESTServer.Routing
 
         private async Task<bool> HandlePost<T, TKey>(IVerbHandler<T, TKey> actualHandler, HttpListenerContext context, SerializationToUse serializationToUse)
         {
-            T item = restMethodActioner.ExtractContent<T>(context.Request,serializationToUse);
+            T item = await restMethodActioner.ExtractContent<T>(context.Request,serializationToUse);
             T itemAdded = await actualHandler.Post(item);
             bool result = await SetResponse<T>(context, itemAdded, serializationToUse);
             return result;
+        }
+        private async Task<bool> HandleDelete<T, TKey>(IVerbHandler<T, TKey> actualHandler, HttpListenerContext context, SerializationToUse serializationToUse)
+        {
+            TKey id = restMethodActioner.ExtractId<TKey>(context.Request);
+            bool updatedOk = await actualHandler.Delete(id);
+            HttpListenerResponse response = context.Response;
+            using (System.IO.Stream output = response.OutputStream)
+            {
+                response.StatusCode = 200;
+                response.StatusDescription = Enum.GetName(typeof(HttpStatusCode), HttpStatusCode.OK);
+            }
+            return updatedOk;
+        }
+
+        private async Task<bool> HandlePut<T, TKey>(IVerbHandler<T, TKey> actualHandler, HttpListenerContext context, SerializationToUse serializationToUse)
+        {
+            TKey id = restMethodActioner.ExtractId<TKey>(context.Request);
+            T item = await restMethodActioner.ExtractContent<T>(context.Request, serializationToUse);
+            bool updatedOk = await actualHandler.Put(id,item);
+            HttpListenerResponse response = context.Response;
+            using (System.IO.Stream output = response.OutputStream)
+            {
+                response.StatusCode = 200;
+                response.StatusDescription = Enum.GetName(typeof(HttpStatusCode), HttpStatusCode.OK);
+            }
+            return updatedOk;
         }
 
         private async Task<bool> SetResponse<T>(HttpListenerContext context,T result, SerializationToUse serializationToUse)
@@ -133,20 +161,24 @@ namespace RESTServer.Routing
             using (System.IO.Stream output = response.OutputStream)
             {
                 ISerializer serializer = restMethodActioner.ObtainSerializer(serializationToUse,context.Request.ContentType);
-                string serialized = serializer.Serialize<T>(result);
+                string serialized = await serializer.Serialize<T>(result);
                 var buffer = Encoding.UTF8.GetBytes(serialized);
                 output.Write(buffer, 0, buffer.Length);
                 response.StatusCode = 200;
-                response.StatusDescription = "OK";
+                response.StatusDescription = Enum.GetName(typeof(HttpStatusCode), HttpStatusCode.OK);
             }
             return true;
         }
 
+        /// <summary>
+        /// Called via Reflection
+        /// </summary>
         private IVerbHandler<T, TKey> CreateVerbHandler<T, TKey>(object item)
         {
             Expression convertExpr = Expression.Convert(
                                         Expression.Constant(item),
-                                        typeof(IVerbHandler<T, TKey>));
+                                        typeof(IVerbHandler<T, TKey>)
+                                     );
 
             var x = Expression.Lambda<Func<IVerbHandler<T, TKey>>>(convertExpr).Compile()();
             return x;

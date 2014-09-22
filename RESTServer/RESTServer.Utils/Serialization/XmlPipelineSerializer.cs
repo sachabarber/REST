@@ -13,18 +13,18 @@ namespace RESTServer.Utils.Serialization
         private XmlSerializer xmlSerializer;
 
 
-        public T Deserialize<T>(string rawBodyData)
+        public async Task<T> Deserialize<T>(string rawBodyData)
         {
             xmlSerializer = new XmlSerializer(typeof(T));
             T result = default(T);
-            using (Stream ms = GenerateStreamFromString(rawBodyData))
+            using (Stream ms = await GenerateStreamFromString(rawBodyData))
             {
                 result = (T)xmlSerializer.Deserialize(ms);
             }
             return result;
         }
 
-        public Byte[] SerializeAsBytes<T>(T item)
+        public async Task<Byte[]> SerializeAsBytes<T>(T item)
         {
             xmlSerializer = new XmlSerializer(typeof(T));
             using (MemoryStream ms = new MemoryStream())
@@ -36,7 +36,7 @@ namespace RESTServer.Utils.Serialization
         }
 
 
-        public string Serialize<T>(T item)
+        public async Task<string> Serialize<T>(T item)
         {
             xmlSerializer = new XmlSerializer(typeof(T));
             using (MemoryStream ms = new MemoryStream())
@@ -51,7 +51,7 @@ namespace RESTServer.Utils.Serialization
         }
 
 
-        private Stream GenerateStreamFromString(string s)
+        private async Task<Stream> GenerateStreamFromString(string s)
         {
             MemoryStream stream = new MemoryStream();
             StreamWriter writer = new StreamWriter(stream, Encoding.UTF8);

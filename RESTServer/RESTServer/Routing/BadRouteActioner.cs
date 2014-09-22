@@ -22,7 +22,7 @@ namespace RESTServer.Routing
                 var buffer = Encoding.UTF8.GetBytes("Not Found");
                 output.Write(buffer, 0, buffer.Length);
                 response.StatusCode = 404;
-                response.StatusDescription = "Not Found";
+                response.StatusDescription = Enum.GetName(typeof(HttpStatusCode), HttpStatusCode.NotFound);
             }
             return true;
 

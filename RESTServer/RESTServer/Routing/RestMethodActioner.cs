@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using RESTServer.Utils.Serialization;
 
 namespace RESTServer.Routing
@@ -51,7 +52,7 @@ namespace RESTServer.Routing
 
         }
 
-        public T ExtractContent<T>(HttpListenerRequest request, SerializationToUse serializationToUse)
+        public async Task<T> ExtractContent<T>(HttpListenerRequest request, SerializationToUse serializationToUse)
         {
             using (StreamReader sr = new StreamReader(request.InputStream))
             {
@@ -59,11 +60,11 @@ namespace RESTServer.Routing
                 switch(serializationToUse)
                 {
                     case SerializationToUse.Json:
-                        return DeSerialize<T>(rawData,jsonPipelineSerializer);
+                        return await DeSerialize<T>(rawData,jsonPipelineSerializer);
                     case SerializationToUse.Xml:
-                        return DeSerialize<T>(rawData,xmlPipelineSerializer);
+                        return await DeSerialize<T>(rawData, xmlPipelineSerializer);
                     default:
-                        return ObtainDeSerializedItemFromBodyContentType<T>(rawData,request.ContentType);
+                        return await ObtainDeSerializedItemFromBodyContentType<T>(rawData, request.ContentType);
                 }
             }            
         }
@@ -76,15 +77,15 @@ namespace RESTServer.Routing
         }
 
 
-        public T DeSerialize<T>(string rawBodyData, ISerializer serializer)
+        public async Task<T> DeSerialize<T>(string rawBodyData, ISerializer serializer)
         {
-            return (T)serializer.Deserialize<T>(rawBodyData);
+            return await serializer.Deserialize<T>(rawBodyData);
         }
 
 
-        public string Serialize<T>(T item, ISerializer serializer)
+        public async Task<string> Serialize<T>(T item, ISerializer serializer)
         {
-            return serializer.Serialize<T>(item);
+            return await serializer.Serialize<T>(item);
         }
 
 
@@ -104,16 +105,16 @@ namespace RESTServer.Routing
                 "Can only deserialize using either 'application/json' or 'application/xml' content types");
         }
 
-        private T ObtainDeSerializedItemFromBodyContentType<T>(string rawData, string contentType)
+        private async Task<T> ObtainDeSerializedItemFromBodyContentType<T>(string rawData, string contentType)
         {
             if (contentType == "application/json")
             {
-                return DeSerialize<T>(rawData, jsonPipelineSerializer);
+                return await DeSerialize<T>(rawData, jsonPipelineSerializer);
             }
 
             if (contentType == "application/xml")
             {
-                return DeSerialize<T>(rawData, xmlPipelineSerializer);
+                return await DeSerialize<T>(rawData, xmlPipelineSerializer);
             }
 
             throw new InvalidOperationException(

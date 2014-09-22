@@ -15,33 +15,42 @@ namespace RESTClientConsoleApp
 
         public static void Main(string[] args)
         {
-            PersonClient personClient = new PersonClient();
-            AccountClient accountClient = new AccountClient();
-
-
             //give server a chance to start
             Thread.Sleep(3000);
 
+            Client c = new Client();
+#pragma warning disable 4014
+            c.Run();
+#pragma warning restore 4014
 
+            Console.ReadLine();
+        }
+
+
+        public async Task Run()
+        {
+            PersonClient personClient = new PersonClient();
+            AccountClient accountClient = new AccountClient();
+
+            
             //Test out PersonHandler server side REST handler, expects XML
 
             //GET
-            //personClient.GetPerson(1);
-            //personClient.GetPeople();
-            //personClient.PostPerson();
-            //personClient.GetPeople();
-            
+            //await personClient.GetPerson(1);
+            //await personClient.GetPeople();
+            //await personClient.PostPerson();
+            //await personClient.GetPeople();
+            //await personClient.PutPerson();
+            await personClient.DeletePerson();
+
             ////Test out PersonHandler server side REST handler, expects JSON
 
             ////GET
-            accountClient.GetAccount(1);
-            accountClient.GetAccounts();
-            accountClient.PostAccount();
-            accountClient.GetAccounts();
-            
-
-            Console.ReadLine();
-
+            //await accountClient.GetAccount(1);
+            //await accountClient.GetAccounts();
+            //await accountClient.PostAccount();
+            //await accountClient.GetAccounts();
+            //await accountClient.PutAccount();
         }
 
 
