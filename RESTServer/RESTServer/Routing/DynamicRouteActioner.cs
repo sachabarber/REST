@@ -69,14 +69,15 @@ namespace RESTServer.Routing
             SerializationToUse actualSerializationToUse = serializationToUse;
             if (serializationToUse == SerializationToUse.UseContentType)
             {
-                ObtainSerializationToUseFromContentType(context.Request.ContentType);
+                actualSerializationToUse = ObtainSerializationToUseFromContentType(context.Request.ContentType);
             }
 
 
+            DynamicMethodInfo method = null;
             switch (httpMethod)
             {
                 case "GET":
-                    var method = await ObtainGetMethod<T, TKey>(handler, url);
+                    method = await ObtainGetMethod<T, TKey>(handler, url);
                     result = await HandleGet<T, TKey>(method, handler, context, actualSerializationToUse);
                     break;
                 //case "PUT":
@@ -85,9 +86,10 @@ namespace RESTServer.Routing
                 //case "POST":
                 //    result = await HandlePost<T, TKey>(actualHandler, context, actualSerializationToUse);
                 //    break;
-                //case "DELETE":
-                //    result = await HandleDelete<T, TKey>(actualHandler, context, actualSerializationToUse);
-                //    break;
+                case "DELETE":
+                    method = await ObtainDeleteMethod<T, TKey>(handler, url);
+                    result = await HandleDelete<T, TKey>(method, handler, context, actualSerializationToUse);
+                    break;
             }
             return result;
         }
@@ -96,7 +98,7 @@ namespace RESTServer.Routing
         {
             var possibleGetMethods = from x in handler.GetType().GetMethods()
                                      let attrib = x.GetCustomAttributes(typeof(RouteAttribute), false)
-                                     where attrib.Length > 0 && ((RouteAttribute)attrib[0]).HttpVerb == "GET"
+                                     where attrib.Length > 0 && ((RouteAttribute)attrib[0]).HttpVerb == HttpMethod.Get
                                      select new { Method = x, Route = (RouteAttribute)attrib[0] };
 
             if (restMethodActioner.IsGetAll(url))
@@ -115,7 +117,7 @@ namespace RESTServer.Routing
                 {
                     return new DynamicMethodInfo(method,false);
                 }
-                throw new HttpResponseException(string.Format("Incorrect return type for route '{0}'", url));
+                throw new HttpResponseException(string.Format("Incorrect return type for route '{0}' expected {1} or Task<{1}", url, typeof(T).Name));
             }
             else
             {
@@ -136,9 +138,38 @@ namespace RESTServer.Routing
                 {
                     return new DynamicMethodInfo(method, false);
                 }
-                throw new HttpResponseException(string.Format("Incorrect return type for route '{0}'", url));
+                throw new HttpResponseException(string.Format("Incorrect return type for route '{0}' expected {1} or Task<{1}", url, typeof(T).Name));
             }
         }
+
+        private async Task<DynamicMethodInfo> ObtainDeleteMethod<T, TKey>(object handler, string url)
+        {
+            var possibleDeleteMethods = from x in handler.GetType().GetMethods()
+                                     let attrib = x.GetCustomAttributes(typeof(RouteAttribute), false)
+                                     where attrib.Length > 0 && ((RouteAttribute)attrib[0]).HttpVerb == HttpMethod.Delete
+                                     select new { Method = x, Route = (RouteAttribute)attrib[0] };
+
+            string attributeUrl = url.Substring(0, url.LastIndexOf("/"));
+            attributeUrl = attributeUrl.Substring(attributeUrl.LastIndexOf("/"));
+            attributeUrl = attributeUrl + "/{0}";
+            var method = possibleDeleteMethods.Where(x => x.Route.Route == attributeUrl)
+                .Select(x => x.Method).FirstOrDefault();
+
+            if (MethodResultIsCorrectType<Task<bool>>(method)
+                && MethodHasSingleIdParameter<TKey>(method))
+            {
+                return new DynamicMethodInfo(method, true);
+            }
+
+            if (MethodResultIsCorrectType<bool>(method)
+                && MethodHasSingleIdParameter<TKey>(method))
+            {
+                return new DynamicMethodInfo(method, false);
+            }
+            throw new HttpResponseException(string.Format("Incorrect return type for route '{0}' expected Bool or Task<bool>", url));
+            
+        }
+
 
         private async Task<bool> HandleGet<T, TKey>(DynamicMethodInfo methodInfo, object handler, 
             HttpListenerContext context, SerializationToUse serializationToUse)
@@ -180,6 +211,29 @@ namespace RESTServer.Routing
             return result;
         }
 
+        private async Task<bool> HandleDelete<T, TKey>(DynamicMethodInfo methodInfo, object handler,
+            HttpListenerContext context, SerializationToUse serializationToUse)
+        {
+            var updatedOk = false;
+            TKey id = restMethodActioner.ExtractId<TKey>(context.Request);
+
+            if (methodInfo.IsTask)
+            {
+                updatedOk  = await (Task<bool>)methodInfo.Method.Invoke(handler, new object[] { id });
+            }
+            else
+            {
+                updatedOk = (bool)methodInfo.Method.Invoke(handler, null);
+            }
+
+            HttpListenerResponse response = context.Response;
+            using (System.IO.Stream output = response.OutputStream)
+            {
+                response.StatusCode = 200;
+                response.StatusDescription = Enum.GetName(typeof(HttpStatusCode), HttpStatusCode.OK);
+            }
+            return updatedOk;
+        }
 
         private SerializationToUse ObtainSerializationToUseFromContentType(string contentType)
         {
@@ -197,7 +251,6 @@ namespace RESTServer.Routing
                 "Can only deserialize using either 'application/json' or 'application/xml' content types");
         }
 
-
         private bool MethodHasSingleIdParameter<TKey>(MethodInfo method)
         {
             var parameters = method.GetParameters();
@@ -209,7 +262,6 @@ namespace RESTServer.Routing
         {
             return method.ReturnType.IsAssignableFrom(typeof (T));
         }
-
 
         private Type[] GetDynamicRouteHandlerGenericArgs(Type item)
         {

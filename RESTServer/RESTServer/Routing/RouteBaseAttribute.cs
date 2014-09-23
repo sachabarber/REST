@@ -2,7 +2,13 @@
 
 namespace RESTServer
 {
-
+    /// <summary>
+    /// An attribute to specify a base portion of a route
+    /// to HttpMethod, and also allows the specification of
+    /// the serialization to use
+    /// Example:
+    /// [RouteBase("/users", SerializationToUse.Json)]
+    /// </summary>
     [System.AttributeUsage(System.AttributeTargets.Class)]
     public class RouteBaseAttribute : System.Attribute
     {

@@ -13,6 +13,11 @@ using RESTServer.Utils.Serialization;
 
 namespace RESTClientConsoleApp
 {
+    /// <summary>
+    /// Demonstrates how to use the REST framework, along with a 
+    /// <c>IVerbHandlerOf<c>Person</c></c> server side handler
+    /// for standard REST Urls
+    /// </summary>
     public class PersonClient
     {
         /// <summary>

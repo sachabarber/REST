@@ -52,6 +52,7 @@
     <Compile Include="Routing\BadRouteActioner.cs" />
     <Compile Include="Routing\DynamicMethodInfo.cs" />
     <Compile Include="Routing\DynamicRouteActioner.cs" />
+    <Compile Include="Routing\HttpMethod.cs" />
     <Compile Include="Routing\RestMethodActioner.cs" />
     <Compile Include="Routing\RouteResult.cs" />
     <Compile Include="Routing\VerbRouteActioner.cs" />

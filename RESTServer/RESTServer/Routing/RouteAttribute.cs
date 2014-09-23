@@ -1,12 +1,19 @@
-﻿using RESTServer.Utils.Serialization;
+﻿using RESTServer.Routing;
+using RESTServer.Utils.Serialization;
 
 namespace RESTServer
 {
+    /// <summary>
+    /// An attribute to specify a dynamic portion of a route that maps
+    /// to HttpMethod
+    /// Example:
+    /// [Route("/GetAllUsers", HttpMethod.Get)]
+    /// </summary>
     [System.AttributeUsage(System.AttributeTargets.Method)]
     public class RouteAttribute : System.Attribute
     {
 
-        public RouteAttribute(string route, string httpVerb, SerializationToUse serializationToUse = SerializationToUse.UseContentType)
+        public RouteAttribute(string route, HttpMethod httpVerb, SerializationToUse serializationToUse = SerializationToUse.UseContentType)
         {
             this.Route = route;
             this.HttpVerb = httpVerb;
@@ -14,7 +21,7 @@ namespace RESTServer
         }
 
         public string Route { get; private set; }
-        public string HttpVerb { get; private set; }
+        public HttpMethod HttpVerb { get; private set; }
         public SerializationToUse SerializationToUse { get; private set; }
     }
 }

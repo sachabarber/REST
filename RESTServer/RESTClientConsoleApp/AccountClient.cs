@@ -12,6 +12,11 @@ using RESTServer.Utils.Serialization;
 
 namespace RESTClientConsoleApp
 {
+    /// <summary>
+    /// Demonstrates how to use the REST framework, along with a 
+    /// <c>IVerbHandlerOf<c>Account</c></c> server side handler
+    /// for standard REST Urls
+    /// </summary>
     public class AccountClient
     {
         /// <summary>
@@ -98,7 +103,8 @@ namespace RESTClientConsoleApp
                 var account = response.Content;
                 Console.WriteLine(account);
 
-                string newAccountNumber = string.Format("{0}_Modified_{1}", account.AccountNumber, DateTime.Now.Ticks);
+                string newAccountNumber = string.Format("{0}_Modified_{1}", 
+                    account.AccountNumber, DateTime.Now.Ticks);
                 account.AccountNumber = newAccountNumber;
 
                 string putUrl = string.Format("http://localhost:8001/accounts/{0}", 1);
@@ -136,7 +142,7 @@ namespace RESTClientConsoleApp
 
                 //the server AccountHandler [RouteBaseAttribute] is set to return Json, 
                 //so we need to deserialize it as Json 
-                var response = await client.Get<List<Account>>("http://localhost:8001/accounts", SerializationToUse.Xml);
+                var response = await client.Get<List<Account>>(getUrl, SerializationToUse.Json);
                 Console.WriteLine("There are currently {0} accounts", response.Content.Count);
 
                 string deleteUrl = string.Format("http://localhost:8001/accounts/{0}", 1);
@@ -151,7 +157,8 @@ namespace RESTClientConsoleApp
                     Console.WriteLine("OBTAINING accounts again");
                     //the server AccountHandler [RouteBaseAttribute] is set to return Json, 
                     //so we need to deserialize it as Json 
-                    response = await client.Get<List<Account>>("http://localhost:8001/accounts", SerializationToUse.Xml);
+                    response = await client.Get<List<Account>>("http://localhost:8001/accounts", 
+                        SerializationToUse.Json);
                     Console.WriteLine("There are currently {0} accounts", response.Content.Count);
 
                 }

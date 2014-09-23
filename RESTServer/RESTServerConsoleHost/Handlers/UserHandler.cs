@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Models;
 using RESTServer;
 using RESTServer.Handlers;
+using RESTServer.Routing;
 using RESTServerConsoleHost.Repositories;
 using RESTServer.Utils.Serialization;
 
@@ -20,16 +21,23 @@ namespace RESTServerConsoleHost.Handlers
         }
 
 
-        [Route("/GetUserByTheirId/{0}", "GET")]
+        [Route("/GetUserByTheirId/{0}", HttpMethod.Get)]
         public async Task<User> GetUserByTheirId(int id)
         {
             return userRepository.Get(id);
         }
 
-        [Route("/GetAllUsers", "GET")]
+        [Route("/GetAllUsers", HttpMethod.Get)]
         public async Task<IEnumerable<User>> GetAllUsers()
         {
             return userRepository.GetAll();
+        }
+
+
+        [Route("/DeleteUserByTheirId/{0}", HttpMethod.Delete)]
+        public async Task<bool> DeleteAUser(int id)
+        {
+            return userRepository.Delete(id);
         }
 
 
