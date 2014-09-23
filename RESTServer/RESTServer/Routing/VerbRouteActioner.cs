@@ -25,53 +25,31 @@ namespace RESTServer.Routing
 
             var httpMethod = context.Request.HttpMethod;
             var url = context.Request.RawUrl;
-            SerializationToUse serializationToUse = SerializationToUse.UseContentType;
             bool result = false;
 
-            foreach (var handler in handlers)
-            {
+            var routeResult = await restMethodActioner.FindHandler(
+                typeof (IVerbHandler<,>), context, handlers,false);
 
-
-                if(handler.GetType().GetInterfaces().Any(x => x.Name == typeof (IVerbHandler<,>).Name))
-                {
-
-
-                    var routeBase =
-                        (RouteBaseAttribute[]) handler.GetType().GetCustomAttributes(typeof (RouteBaseAttribute), false);
-                    if (routeBase.Length > 0)
-                    {
-                        bool isBaseMatch = url.StartsWith(routeBase[0].UrlBase);
-                        bool isUrlMatch = restMethodActioner.IsUrlMatch(routeBase[0].UrlBase, url, httpMethod);
-                        if (isBaseMatch && isUrlMatch)
-                        {
-                            serializationToUse = routeBase[0].SerializationToUse;
-                            matchingHandler = handler;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (matchingHandler != null)
+            if (routeResult.Handler != null)
             {
                 //handler is using RouteBase, so fair chance it is a VerbHandler
-                var genericArgs = GetVerbHandlerGenericArgs(matchingHandler.GetType());
-
+                var genericArgs = GetVerbHandlerGenericArgs(routeResult.Handler.GetType());
 
                 MethodInfo method = typeof(VerbRouteActioner).GetMethod("DispatchToHandler", 
                     BindingFlags.NonPublic | BindingFlags.Instance);
                
                 MethodInfo generic = method.MakeGenericMethod(genericArgs[0], genericArgs[1]);
-                result = await (Task<bool>)generic.Invoke(this, new object[] { context, matchingHandler, httpMethod, serializationToUse });
+                result = await (Task<bool>)generic.Invoke(this, new object[]
+                {
+                    context, routeResult.Handler, httpMethod, routeResult.SerializationToUse
+                });
 
                 return result;
 
             }
-            else
-            {
-                result = await this.Successor.ActionRequest(context, handlers);
-                return result;
-            }
+
+            result = await this.Successor.ActionRequest(context, handlers);
+            return result;
         }
 
         private async Task<bool> DispatchToHandler<T, TKey>(HttpListenerContext context, object handler,
@@ -79,8 +57,9 @@ namespace RESTServer.Routing
         {
             MethodInfo method = typeof(VerbRouteActioner).GetMethod("CreateVerbHandler", 
                 BindingFlags.NonPublic | BindingFlags.Instance);
-            MethodInfo generic = method.MakeGenericMethod(new Type[] { typeof(T), typeof(TKey) });
-            IVerbHandler<T, TKey> actualHandler = (IVerbHandler<T, TKey>)generic.Invoke(this, new object[] { handler });
+            MethodInfo generic = method.MakeGenericMethod(new [] { typeof(T), typeof(TKey) });
+            IVerbHandler<T, TKey> actualHandler = 
+                (IVerbHandler<T, TKey>)generic.Invoke(this, new [] { handler });
             var result = false;
 
 
@@ -106,16 +85,16 @@ namespace RESTServer.Routing
         {
 
             var result = false;
-            if (restMethodActioner.IsGetAll(context.Request))
+            if (restMethodActioner.IsGetAll(context.Request.RawUrl))
             {
                 var items = await actualHandler.Get();
-                result = await SetResponse<List<T>>(context, items.ToList(), serializationToUse);
+                result = await restMethodActioner.SetResponse<List<T>>(context, items.ToList(), serializationToUse);
             }
             else
             {
                 TKey id = restMethodActioner.ExtractId<TKey>(context.Request);
                 var item = await actualHandler.Get(id);
-                result = await SetResponse<T>(context, item, serializationToUse);
+                result = await restMethodActioner.SetResponse<T>(context, item, serializationToUse);
             }
 
             return result;
@@ -125,9 +104,10 @@ namespace RESTServer.Routing
         {
             T item = await restMethodActioner.ExtractContent<T>(context.Request,serializationToUse);
             T itemAdded = await actualHandler.Post(item);
-            bool result = await SetResponse<T>(context, itemAdded, serializationToUse);
+            bool result = await restMethodActioner.SetResponse<T>(context, itemAdded, serializationToUse);
             return result;
         }
+  
         private async Task<bool> HandleDelete<T, TKey>(IVerbHandler<T, TKey> actualHandler, HttpListenerContext context, SerializationToUse serializationToUse)
         {
             TKey id = restMethodActioner.ExtractId<TKey>(context.Request);
@@ -155,20 +135,6 @@ namespace RESTServer.Routing
             return updatedOk;
         }
 
-        private async Task<bool> SetResponse<T>(HttpListenerContext context,T result, SerializationToUse serializationToUse)
-        {
-            HttpListenerResponse response = context.Response;
-            using (System.IO.Stream output = response.OutputStream)
-            {
-                ISerializer serializer = restMethodActioner.ObtainSerializer(serializationToUse,context.Request.ContentType);
-                string serialized = await serializer.Serialize<T>(result);
-                var buffer = Encoding.UTF8.GetBytes(serialized);
-                output.Write(buffer, 0, buffer.Length);
-                response.StatusCode = 200;
-                response.StatusDescription = Enum.GetName(typeof(HttpStatusCode), HttpStatusCode.OK);
-            }
-            return true;
-        }
 
         /// <summary>
         /// Called via Reflection

@@ -6,7 +6,7 @@ namespace RESTServer
     public class RouteAttribute : System.Attribute
     {
 
-        public RouteAttribute(string route, string httpVerb, SerializationToUse serializationToUse)
+        public RouteAttribute(string route, string httpVerb, SerializationToUse serializationToUse = SerializationToUse.UseContentType)
         {
             this.Route = route;
             this.HttpVerb = httpVerb;

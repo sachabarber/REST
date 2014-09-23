@@ -24,6 +24,11 @@ namespace RESTServerConsoleHost.IOC
                 .For(typeof(IRepository<Account,int>))
                 .ImplementedBy(typeof(InMemoryAccountRepository))
                 .LifestyleSingleton());
+            
+            container.Register(Component
+                .For(typeof(IRepository<User,int>))
+                .ImplementedBy(typeof(InMemoryUserRepository))
+                .LifestyleSingleton());
         }
     }
 }

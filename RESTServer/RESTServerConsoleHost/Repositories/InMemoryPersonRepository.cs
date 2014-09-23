@@ -59,7 +59,7 @@ namespace RESTServerConsoleHost.Repositories
         {
             if (item == null)
             {
-                throw new HttpResponseException("item");
+                throw new InvalidOperationException("item");
             }
             int index = people.FindIndex(p => p.Id == item.Id);
             if (index == -1)
@@ -74,12 +74,12 @@ namespace RESTServerConsoleHost.Repositories
         public bool Delete(int id)
         {
             if (id < 0)
-                throw new HttpResponseException(
+                throw new InvalidOperationException(
                     "Delete MUST be provided with an Id value >= 0");
 
             var person = people.SingleOrDefault(x => x.Id == id);
             if (person == null)
-                throw new HttpResponseException("Could not find correct item");
+                throw new InvalidOperationException("Could not find correct item");
             
             people.Remove(person);
             return true;

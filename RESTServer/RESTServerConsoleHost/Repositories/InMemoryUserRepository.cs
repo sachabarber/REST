@@ -8,66 +8,64 @@ using RESTServer.Exceptions;
 
 namespace RESTServerConsoleHost.Repositories
 {
-    public class InMemoryAccountRepository : IRepository<Account, int>
+    public class InMemoryUserRepository : IRepository<User, int>
     {
-        private List<Account> accounts = new List<Account>();
+        private List<User> users = new List<User>();
 
 
-        public InMemoryAccountRepository()
+        public InMemoryUserRepository()
         {
-            accounts.Add(new Account()
+            users.Add(new User()
             {
                 Id = 1,
-                AccountNumber = "11558836",
-                SortCode = "11-22-44"
+                UserName = "Charles Bensi"
             });
 
-            accounts.Add(new Account()
+            users.Add(new User()
             {
                 Id = 2,
-                AccountNumber = "12345678",
-                SortCode = "22-88-78"
+                UserName = "Tom Henki"
             });
         }
 
 
-        #region IRepository<Account> Members
+        #region IRepository<User> Members
 
-        public Account Get(int id)
+        public User Get(int id)
         {
-            var account = accounts.SingleOrDefault(x => x.Id == id);
-            if (account == null)
+            var user = users.SingleOrDefault(x => x.Id == id);
+            if (user == null)
                 throw new InvalidOperationException("Could not find correct item");
             else
-                return account;
+                return user;
         }
 
-        public IEnumerable<Account> GetAll()
+        public IEnumerable<User> GetAll()
         {
-            return accounts;
+            return users;
         }
 
-        public Account Add(Account item)
+        public User Add(User item)
         {
-            int id = accounts.Max(x => x.Id) + 1;
+            int id = users.Max(x => x.Id) + 1;
             item.Id = id;
-            accounts.Add(item);
+            users.Add(item);
             return item;
         }
 
-        public bool Update(Account item)
+        public bool Update(User item)
         {
             if (item == null)
             {
                 throw new InvalidOperationException("item");
             }
-            int index = accounts.FindIndex(p => p.Id == item.Id);
+            int index = users.FindIndex(p => p.Id == item.Id);
             if (index == -1)
             {
                 return false;
             }
-            accounts.RemoveAt(index);
-            accounts.Add(item);
+            users.RemoveAt(index);
+            users.Add(item);
             return true;
 
         }
@@ -78,11 +76,11 @@ namespace RESTServerConsoleHost.Repositories
                 throw new InvalidOperationException(
                     "Delete MUST be provided with an Id value >= 0");
 
-            var account = accounts.SingleOrDefault(x => x.Id == id);
-            if (account == null)
+            var user = users.SingleOrDefault(x => x.Id == id);
+            if (user == null)
                 throw new InvalidOperationException("Could not find correct item");
 
-            accounts.Remove(account);
+            users.Remove(user);
             return true;
         }
 

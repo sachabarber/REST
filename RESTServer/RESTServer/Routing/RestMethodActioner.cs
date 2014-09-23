@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using RESTServer.Handlers;
 using RESTServer.Utils.Serialization;
 
 namespace RESTServer.Routing
@@ -44,15 +47,61 @@ namespace RESTServer.Routing
             return false;
         }
 
-
-
-        public bool IsGetAll(HttpListenerRequest request)
+        public async Task<RouteResult> FindHandler(Type handlerTypeRequired,
+            HttpListenerContext context, IList<IHandler> handlers, bool isDynamicHandler)
         {
-            return !char.IsDigit(request.RawUrl.Last());
+            var httpMethod = context.Request.HttpMethod;
+            var url = context.Request.RawUrl;
+            RouteResult result = new RouteResult();
+            result.SerializationToUse = SerializationToUse.UseContentType;
 
+            foreach (var handler in handlers)
+            {
+                if (handler.GetType().GetInterfaces().Any(x => x.Name == handlerTypeRequired.Name))
+                {
+                    var routeBase = (RouteBaseAttribute[])handler.GetType()
+                        .GetCustomAttributes(typeof(RouteBaseAttribute), false);
+
+                    if (routeBase.Length > 0)
+                    {
+                        bool isBaseMatch = url.StartsWith(routeBase[0].UrlBase);
+                        bool isUrlMatch = IsUrlMatch(routeBase[0].UrlBase, url, httpMethod);
+                        if (isBaseMatch && (isUrlMatch || isDynamicHandler))
+                        {
+                            result.SerializationToUse = routeBase[0].SerializationToUse;
+                            result.Handler = handler;
+                            break;
+                        }
+                    }
+                }
+            }
+            return result;
         }
 
-        public async Task<T> ExtractContent<T>(HttpListenerRequest request, SerializationToUse serializationToUse)
+
+        public async Task<bool> SetResponse<T>(HttpListenerContext context, T result, SerializationToUse serializationToUse)
+        {
+            HttpListenerResponse response = context.Response;
+            using (System.IO.Stream output = response.OutputStream)
+            {
+                ISerializer serializer = ObtainSerializer(serializationToUse, context.Request.ContentType);
+                string serialized = await serializer.Serialize<T>(result);
+                var buffer = Encoding.UTF8.GetBytes(serialized);
+                output.Write(buffer, 0, buffer.Length);
+                response.StatusCode = 200;
+                response.StatusDescription = Enum.GetName(typeof(HttpStatusCode), HttpStatusCode.OK);
+            }
+            return true;
+        }
+
+
+        public bool IsGetAll(string url)
+        {
+            return !char.IsDigit(url.Last());
+        }
+
+        public async Task<T> ExtractContent<T>(HttpListenerRequest request, 
+            SerializationToUse serializationToUse)
         {
             using (StreamReader sr = new StreamReader(request.InputStream))
             {

@@ -50,8 +50,10 @@
     <Compile Include="HttpServer.cs" />
     <Compile Include="Handlers\IVerbHandler.cs" />
     <Compile Include="Routing\BadRouteActioner.cs" />
+    <Compile Include="Routing\DynamicMethodInfo.cs" />
     <Compile Include="Routing\DynamicRouteActioner.cs" />
     <Compile Include="Routing\RestMethodActioner.cs" />
+    <Compile Include="Routing\RouteResult.cs" />
     <Compile Include="Routing\VerbRouteActioner.cs" />
     <Compile Include="Routing\RouteActioner.cs" />
     <Compile Include="Routing\RouteAttribute.cs" />
