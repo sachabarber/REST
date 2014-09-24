@@ -81,14 +81,16 @@ namespace RESTServer.Routing
             return result;
         }
 
-        private async Task<bool> HandleGet<T, TKey>(IVerbHandler<T, TKey> actualHandler, HttpListenerContext context, SerializationToUse serializationToUse)
+        private async Task<bool> HandleGet<T, TKey>(IVerbHandler<T, TKey> actualHandler, 
+            HttpListenerContext context, SerializationToUse serializationToUse)
         {
 
             var result = false;
             if (restMethodActioner.IsGetAll(context.Request.RawUrl))
             {
                 var items = await actualHandler.Get();
-                result = await restMethodActioner.SetResponse<List<T>>(context, items.ToList(), serializationToUse);
+                result = await restMethodActioner.SetResponse<List<T>>(context, items.ToList(), 
+                    serializationToUse);
             }
             else
             {

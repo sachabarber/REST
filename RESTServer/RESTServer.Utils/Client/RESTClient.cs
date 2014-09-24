@@ -78,7 +78,7 @@ namespace RESTServer.Utils.Client
             {
                 Headers.Add("Content-Type", "application/json");
                 var serialized = await jsonPipelineSerializer.SerializeAsBytes(item);
-                return UploadData(url, "PUT", serialized);
+                return UploadData(url, httpMethod, serialized);
             }
             throw new InvalidOperationException("You need to specify either Xml or Json serialization");
 

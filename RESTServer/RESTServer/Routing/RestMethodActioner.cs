@@ -53,7 +53,6 @@ namespace RESTServer.Routing
             var httpMethod = context.Request.HttpMethod;
             var url = context.Request.RawUrl;
             RouteResult result = new RouteResult();
-            result.SerializationToUse = SerializationToUse.UseContentType;
 
             foreach (var handler in handlers)
             {

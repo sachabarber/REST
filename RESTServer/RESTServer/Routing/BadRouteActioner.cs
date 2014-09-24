@@ -12,9 +12,8 @@ namespace RESTServer.Routing
     {
         RestMethodActioner restMethodActioner = new RestMethodActioner();
 
-
-
-        public override async Task<bool> ActionRequest(System.Net.HttpListenerContext context, IList<IHandler> handlers)
+        public override async Task<bool> ActionRequest(HttpListenerContext context, 
+            IList<IHandler> handlers)
         {
             HttpListenerResponse response = context.Response;
             using (System.IO.Stream output = response.OutputStream)
@@ -25,9 +24,6 @@ namespace RESTServer.Routing
                 response.StatusDescription = Enum.GetName(typeof(HttpStatusCode), HttpStatusCode.NotFound);
             }
             return true;
-
         }
-
-
     }
 }

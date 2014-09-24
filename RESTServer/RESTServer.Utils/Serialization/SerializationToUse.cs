@@ -9,7 +9,6 @@ namespace RESTServer.Utils.Serialization
     public enum SerializationToUse
     {
         Xml=1,
-        Json=2,
-        UseContentType=3
+        Json=2
     }
 }

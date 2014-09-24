@@ -28,7 +28,6 @@ namespace RESTServer.Routing
 
             var httpMethod = context.Request.HttpMethod;
             var url = context.Request.RawUrl;
-            SerializationToUse serializationToUse = SerializationToUse.UseContentType;
             bool result = false;
 
             var routeResult = await restMethodActioner.FindHandler(
@@ -56,21 +55,13 @@ namespace RESTServer.Routing
             return result;
         }
 
-
-
-
-
         private async Task<bool> DispatchToHandler<T, TKey>(HttpListenerContext context, object handler,
             string httpMethod, string url, SerializationToUse serializationToUse)
         {
             var result = false;
 
 
-            SerializationToUse actualSerializationToUse = serializationToUse;
-            if (serializationToUse == SerializationToUse.UseContentType)
-            {
-                actualSerializationToUse = ObtainSerializationToUseFromContentType(context.Request.ContentType);
-            }
+            
 
 
             DynamicMethodInfo method = null;
@@ -78,28 +69,30 @@ namespace RESTServer.Routing
             {
                 case "GET":
                     method = await ObtainGetMethod<T, TKey>(handler, url);
-                    result = await HandleGet<T, TKey>(method, handler, context, actualSerializationToUse);
+                    result = await HandleGet<T, TKey>(method, handler, context, serializationToUse);
                     break;
                 //case "PUT":
-                //    result = await HandlePut<T, TKey>(actualHandler, context, actualSerializationToUse);
+                //    result = await HandlePut<T, TKey>(actualHandler, context, serializationToUse);
                 //    break;
-                //case "POST":
-                //    result = await HandlePost<T, TKey>(actualHandler, context, actualSerializationToUse);
-                //    break;
+                case "POST":
+                    method = await ObtainPostMethod<T, TKey>(handler, url);
+                    result = await HandlePost<T, TKey>(method, handler, context, serializationToUse);
+                    break;
                 case "DELETE":
                     method = await ObtainDeleteMethod<T, TKey>(handler, url);
-                    result = await HandleDelete<T, TKey>(method, handler, context, actualSerializationToUse);
+                    result = await HandleDelete<T, TKey>(method, handler, context, serializationToUse);
                     break;
             }
             return result;
         }
 
+
+
+
+
         private async Task<DynamicMethodInfo> ObtainGetMethod<T, TKey>(object handler, string url)
         {
-            var possibleGetMethods = from x in handler.GetType().GetMethods()
-                                     let attrib = x.GetCustomAttributes(typeof(RouteAttribute), false)
-                                     where attrib.Length > 0 && ((RouteAttribute)attrib[0]).HttpVerb == HttpMethod.Get
-                                     select new { Method = x, Route = (RouteAttribute)attrib[0] };
+            var possibleGetMethods = ObtainPossibleMethodMatches(handler, HttpMethod.Get);
 
             if (restMethodActioner.IsGetAll(url))
             {
@@ -117,59 +110,75 @@ namespace RESTServer.Routing
                 {
                     return new DynamicMethodInfo(method,false);
                 }
-                throw new HttpResponseException(string.Format("Incorrect return type for route '{0}' expected {1} or Task<{1}", url, typeof(T).Name));
+                throw new HttpResponseException(string.Format(
+                    "Incorrect return type for route '{0}' expected {1} or Task<{1}", url, typeof(T).Name));
             }
             else
             {
-                string attributeUrl = url.Substring(0,url.LastIndexOf("/"));
-                attributeUrl = attributeUrl.Substring(attributeUrl.LastIndexOf("/"));
-                attributeUrl = attributeUrl + "/{0}";
-                var method = possibleGetMethods.Where(x => x.Route.Route == attributeUrl)
-                    .Select(x => x.Method).FirstOrDefault();
+                var method = GetIdMethodMatch(possibleGetMethods, url);
 
                 if (MethodResultIsCorrectType<Task<T>>(method)
-                    && MethodHasSingleIdParameter<TKey>(method))
+                    && MethodHasSingleCorrectParameterOfType<TKey>(method))
                 {
                     return new DynamicMethodInfo(method, true);
                 }
 
                 if (MethodResultIsCorrectType<T>(method)
-                    && MethodHasSingleIdParameter<TKey>(method))
+                    && MethodHasSingleCorrectParameterOfType<TKey>(method))
                 {
                     return new DynamicMethodInfo(method, false);
                 }
-                throw new HttpResponseException(string.Format("Incorrect return type for route '{0}' expected {1} or Task<{1}", url, typeof(T).Name));
+                throw new HttpResponseException(string.Format(
+                    "Incorrect return type for route '{0}' expected {1} or Task<{1}", url, typeof(T).Name));
             }
         }
 
         private async Task<DynamicMethodInfo> ObtainDeleteMethod<T, TKey>(object handler, string url)
         {
-            var possibleDeleteMethods = from x in handler.GetType().GetMethods()
-                                     let attrib = x.GetCustomAttributes(typeof(RouteAttribute), false)
-                                     where attrib.Length > 0 && ((RouteAttribute)attrib[0]).HttpVerb == HttpMethod.Delete
-                                     select new { Method = x, Route = (RouteAttribute)attrib[0] };
+            var possibleDeleteMethods = ObtainPossibleMethodMatches(handler, HttpMethod.Delete);
 
-            string attributeUrl = url.Substring(0, url.LastIndexOf("/"));
-            attributeUrl = attributeUrl.Substring(attributeUrl.LastIndexOf("/"));
-            attributeUrl = attributeUrl + "/{0}";
-            var method = possibleDeleteMethods.Where(x => x.Route.Route == attributeUrl)
-                .Select(x => x.Method).FirstOrDefault();
+            var method = GetIdMethodMatch(possibleDeleteMethods, url);
 
             if (MethodResultIsCorrectType<Task<bool>>(method)
-                && MethodHasSingleIdParameter<TKey>(method))
+                && MethodHasSingleCorrectParameterOfType<TKey>(method))
             {
                 return new DynamicMethodInfo(method, true);
             }
 
             if (MethodResultIsCorrectType<bool>(method)
-                && MethodHasSingleIdParameter<TKey>(method))
+                && MethodHasSingleCorrectParameterOfType<TKey>(method))
             {
                 return new DynamicMethodInfo(method, false);
             }
-            throw new HttpResponseException(string.Format("Incorrect return type for route '{0}' expected Bool or Task<bool>", url));
+            throw new HttpResponseException(string.Format(
+                "Incorrect return type for route '{0}' expected Bool or Task<bool>", url));
             
         }
 
+        private async Task<DynamicMethodInfo> ObtainPostMethod<T, TKey>(object handler, string url)
+        {
+            var possiblePostMethods = ObtainPossibleMethodMatches(handler, HttpMethod.Post);
+            
+            string attributeUrl = url.Substring(url.LastIndexOf("/"));
+
+            var method = possiblePostMethods.Where(x => x.Route.Route == attributeUrl)
+                .Select(x=>x.Method).FirstOrDefault();
+
+            if (MethodResultIsCorrectType<Task<T>>(method)
+                && MethodHasSingleCorrectParameterOfType<T>(method))
+            {
+                return new DynamicMethodInfo(method, true);
+            }
+
+            if (MethodResultIsCorrectType<T>(method)
+                && MethodHasSingleCorrectParameterOfType<T>(method))
+            {
+                return new DynamicMethodInfo(method, false);
+            }
+            throw new HttpResponseException(string.Format(
+                "Incorrect return type for route '{0}' expected Bool or Task<{1}>", url, typeof(T).Name));
+
+        }
 
         private async Task<bool> HandleGet<T, TKey>(DynamicMethodInfo methodInfo, object handler, 
             HttpListenerContext context, SerializationToUse serializationToUse)
@@ -235,23 +244,26 @@ namespace RESTServer.Routing
             return updatedOk;
         }
 
-        private SerializationToUse ObtainSerializationToUseFromContentType(string contentType)
+        private async Task<bool> HandlePost<T, TKey>(DynamicMethodInfo methodInfo, object handler,
+            HttpListenerContext context, SerializationToUse serializationToUse)
         {
-            if (contentType == "application/json")
+            T itemAdded = default(T);
+            T item = await restMethodActioner.ExtractContent<T>(context.Request, serializationToUse);
+
+            if (methodInfo.IsTask)
             {
-                return SerializationToUse.Json;
+                itemAdded = await (Task<T>)methodInfo.Method.Invoke(handler, new object[] { item });
+            }
+            else
+            {
+                itemAdded = (T)methodInfo.Method.Invoke(handler, null);
             }
 
-            if (contentType == "application/xml")
-            {
-                return SerializationToUse.Xml;
-            }
-
-            throw new InvalidOperationException(
-                "Can only deserialize using either 'application/json' or 'application/xml' content types");
+            bool result = await restMethodActioner.SetResponse<T>(context, itemAdded, serializationToUse);
+            return result;
         }
 
-        private bool MethodHasSingleIdParameter<TKey>(MethodInfo method)
+        private bool MethodHasSingleCorrectParameterOfType<TKey>(MethodInfo method)
         {
             var parameters = method.GetParameters();
             return parameters.Count() == 1 && parameters[0].ParameterType == typeof (TKey);
@@ -263,6 +275,21 @@ namespace RESTServer.Routing
             return method.ReturnType.IsAssignableFrom(typeof (T));
         }
 
+        private IEnumerable<MethodMatch> ObtainPossibleMethodMatches(object handler, HttpMethod httpMethod)
+        {
+            return from x in handler.GetType().GetMethods()
+                   let attrib = x.GetCustomAttributes(typeof(RouteAttribute), false)
+                   where attrib.Length > 0 && ((RouteAttribute)attrib[0]).HttpVerb == httpMethod
+                   select new MethodMatch(x, (RouteAttribute)attrib[0]);
+        }
+        private MethodInfo GetIdMethodMatch(IEnumerable<MethodMatch> possibleMatches, string url)
+        {
+            string attributeUrl = url.Substring(0, url.LastIndexOf("/"));
+            attributeUrl = attributeUrl.Substring(attributeUrl.LastIndexOf("/"));
+            attributeUrl = attributeUrl + "/{0}";
+            return possibleMatches.Where(x => x.Route.Route == attributeUrl)
+                .Select(x => x.Method).FirstOrDefault();
+        }
         private Type[] GetDynamicRouteHandlerGenericArgs(Type item)
         {
 

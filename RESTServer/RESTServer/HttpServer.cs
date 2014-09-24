@@ -41,9 +41,11 @@ namespace RESTServer
 
 
 
-             //Accept connections:
-             //Higher values mean more connections can be maintained yet at a much slower average response time; fewer connections will be rejected.
-             //Lower values mean less connections can be maintained yet at a much faster average response time; more connections will be rejected.
+            //Accept connections:
+            //1. Higher values mean more connections can be maintained yet at a 
+            //   much slower average response time; fewer connections will be rejected.
+            //2. Lower values mean less connections can be maintained yet at a 
+            //   much faster average response time; more connections will be rejected.
             var sem = new Semaphore(accepts, accepts);
 
 
@@ -69,8 +71,6 @@ namespace RESTServer
 
                         await Console.Error.WriteLineAsync(errMessage);
                     });
-
-                
             }
         }
 

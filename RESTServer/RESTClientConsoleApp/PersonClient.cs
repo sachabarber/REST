@@ -87,7 +87,6 @@ namespace RESTClientConsoleApp
             }
         }
 
-
         /// <summary>
         /// Http : PUT
         /// </summary>

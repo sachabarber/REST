@@ -13,15 +13,13 @@ namespace RESTServer
     public class RouteAttribute : System.Attribute
     {
 
-        public RouteAttribute(string route, HttpMethod httpVerb, SerializationToUse serializationToUse = SerializationToUse.UseContentType)
+        public RouteAttribute(string route, HttpMethod httpVerb)
         {
             this.Route = route;
             this.HttpVerb = httpVerb;
-            this.SerializationToUse = serializationToUse;
         }
 
         public string Route { get; private set; }
         public HttpMethod HttpVerb { get; private set; }
-        public SerializationToUse SerializationToUse { get; private set; }
     }
 }

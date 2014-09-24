@@ -20,6 +20,8 @@ namespace RESTServerConsoleHost.Handlers
             this.userRepository = userRepository;
         }
 
+        #region IDynamicRouteHandler<User,int> Members
+
 
         [Route("/GetUserByTheirId/{0}", HttpMethod.Get)]
         public async Task<User> GetUserByTheirId(int id)
@@ -33,42 +35,25 @@ namespace RESTServerConsoleHost.Handlers
             return userRepository.GetAll();
         }
 
+        [Route("/AddASingleUser", HttpMethod.Post)]
+        public async Task<User> AddASingleUser(User item)
+        {
+            return userRepository.Add(item);
+        }
+
+        [Route("/UpdateAUserUsingId/{0}", HttpMethod.Put)]
+        public async Task<bool> UpdateTheUserWithId(int id, User item)
+        {
+            item.Id = id;
+            return userRepository.Update(item);
+        }
 
         [Route("/DeleteUserByTheirId/{0}", HttpMethod.Delete)]
         public async Task<bool> DeleteAUser(int id)
         {
             return userRepository.Delete(id);
         }
-
-
-        //#region IVerbHandler<Person,int> Members
-
-        //public async Task<Person> Get(int id)
-        //{
-        //    return userRepository.Get(id);
-        //}
-
-        //public async Task<IEnumerable<Person>> Get()
-        //{
-        //    return userRepository.GetAll();
-        //}
-
-        //public async Task<Person> Post(Person item)
-        //{
-        //    return userRepository.Add(item);
-        //}
-
-        //public async Task<bool> Put(int id, Person item)
-        //{
-        //    item.Id = id;
-        //    return userRepository.Update(item);
-        //}
-
-        //public async Task<bool> Delete(int id)
-        //{
-        //    return userRepository.Delete(id);
-        //}
-
-        //#endregion
+   
+        #endregion
     }
 }
