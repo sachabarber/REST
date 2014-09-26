@@ -71,9 +71,10 @@ namespace RESTServer.Routing
                     method = await ObtainGetMethod<T, TKey>(handler, url);
                     result = await HandleGet<T, TKey>(method, handler, context, serializationToUse);
                     break;
-                //case "PUT":
-                //    result = await HandlePut<T, TKey>(actualHandler, context, serializationToUse);
-                //    break;
+                case "PUT":
+                    method = await ObtainPutMethod<T, TKey>(handler, url);
+                    result = await HandlePut<T, TKey>(method, handler, context, serializationToUse);
+                    break;
                 case "POST":
                     method = await ObtainPostMethod<T, TKey>(handler, url);
                     result = await HandlePost<T, TKey>(method, handler, context, serializationToUse);
@@ -85,9 +86,6 @@ namespace RESTServer.Routing
             }
             return result;
         }
-
-
-
 
 
         private async Task<DynamicMethodInfo> ObtainGetMethod<T, TKey>(object handler, string url)
@@ -111,7 +109,7 @@ namespace RESTServer.Routing
                     return new DynamicMethodInfo(method,false);
                 }
                 throw new HttpResponseException(string.Format(
-                    "Incorrect return type for route '{0}' expected {1} or Task<{1}", url, typeof(T).Name));
+                    "Incorrect return type/parameters for route '{0}'", url));
             }
             else
             {
@@ -129,30 +127,30 @@ namespace RESTServer.Routing
                     return new DynamicMethodInfo(method, false);
                 }
                 throw new HttpResponseException(string.Format(
-                    "Incorrect return type for route '{0}' expected {1} or Task<{1}", url, typeof(T).Name));
+                    "Incorrect return type/parameters for route '{0}'", url));
             }
         }
 
-        private async Task<DynamicMethodInfo> ObtainDeleteMethod<T, TKey>(object handler, string url)
+        private async Task<DynamicMethodInfo> ObtainPutMethod<T, TKey>(object handler, string url)
         {
-            var possibleDeleteMethods = ObtainPossibleMethodMatches(handler, HttpMethod.Delete);
+            var possiblePutMethods = ObtainPossibleMethodMatches(handler, HttpMethod.Put);
 
-            var method = GetIdMethodMatch(possibleDeleteMethods, url);
+            var method = GetIdMethodMatch(possiblePutMethods, url);
 
             if (MethodResultIsCorrectType<Task<bool>>(method)
-                && MethodHasSingleCorrectParameterOfType<TKey>(method))
+                && MethodHasCorrectPutParameters<T, TKey>(method))
             {
                 return new DynamicMethodInfo(method, true);
             }
 
             if (MethodResultIsCorrectType<bool>(method)
-                && MethodHasSingleCorrectParameterOfType<TKey>(method))
+                && MethodHasCorrectPutParameters<T, TKey>(method))
             {
                 return new DynamicMethodInfo(method, false);
             }
             throw new HttpResponseException(string.Format(
-                "Incorrect return type for route '{0}' expected Bool or Task<bool>", url));
-            
+                "Incorrect return type/parameters for route '{0}'", url));
+
         }
 
         private async Task<DynamicMethodInfo> ObtainPostMethod<T, TKey>(object handler, string url)
@@ -176,9 +174,32 @@ namespace RESTServer.Routing
                 return new DynamicMethodInfo(method, false);
             }
             throw new HttpResponseException(string.Format(
-                "Incorrect return type for route '{0}' expected Bool or Task<{1}>", url, typeof(T).Name));
+                "Incorrect return type/parameters for route '{0}'", url));
 
         }
+
+        private async Task<DynamicMethodInfo> ObtainDeleteMethod<T, TKey>(object handler, string url)
+        {
+            var possibleDeleteMethods = ObtainPossibleMethodMatches(handler, HttpMethod.Delete);
+
+            var method = GetIdMethodMatch(possibleDeleteMethods, url);
+
+            if (MethodResultIsCorrectType<Task<bool>>(method)
+                && MethodHasSingleCorrectParameterOfType<TKey>(method))
+            {
+                return new DynamicMethodInfo(method, true);
+            }
+
+            if (MethodResultIsCorrectType<bool>(method)
+                && MethodHasSingleCorrectParameterOfType<TKey>(method))
+            {
+                return new DynamicMethodInfo(method, false);
+            }
+            throw new HttpResponseException(string.Format(
+                "Incorrect return type/parameters for route '{0}'", url));
+
+        }
+
 
         private async Task<bool> HandleGet<T, TKey>(DynamicMethodInfo methodInfo, object handler, 
             HttpListenerContext context, SerializationToUse serializationToUse)
@@ -202,7 +223,7 @@ namespace RESTServer.Routing
             }
             else
             {
-                TKey id = restMethodActioner.ExtractId<TKey>(context.Request);
+                TKey id = await restMethodActioner.ExtractId<TKey>(context.Request);
 
                 if (methodInfo.IsTask)
                 {
@@ -212,7 +233,7 @@ namespace RESTServer.Routing
                 }
                 else
                 {
-                    var item = (T)methodInfo.Method.Invoke(handler, null);
+                    var item = (T)methodInfo.Method.Invoke(handler, new object[] { id });
                     result = await restMethodActioner.SetResponse<T>(context,
                         item, serializationToUse);
                 }
@@ -220,27 +241,23 @@ namespace RESTServer.Routing
             return result;
         }
 
-        private async Task<bool> HandleDelete<T, TKey>(DynamicMethodInfo methodInfo, object handler,
+
+        private async Task<bool> HandlePut<T, TKey>(DynamicMethodInfo methodInfo, object handler,
             HttpListenerContext context, SerializationToUse serializationToUse)
         {
+            T item = await restMethodActioner.ExtractContent<T>(context.Request, serializationToUse);
+            TKey id = await restMethodActioner.ExtractId<TKey>(context.Request);
             var updatedOk = false;
-            TKey id = restMethodActioner.ExtractId<TKey>(context.Request);
 
             if (methodInfo.IsTask)
             {
-                updatedOk  = await (Task<bool>)methodInfo.Method.Invoke(handler, new object[] { id });
+                updatedOk = await (Task<bool>)methodInfo.Method.Invoke(handler, new object[] { id, item });
             }
             else
             {
                 updatedOk = (bool)methodInfo.Method.Invoke(handler, null);
             }
-
-            HttpListenerResponse response = context.Response;
-            using (System.IO.Stream output = response.OutputStream)
-            {
-                response.StatusCode = 200;
-                response.StatusDescription = Enum.GetName(typeof(HttpStatusCode), HttpStatusCode.OK);
-            }
+            updatedOk &= await restMethodActioner.SetOkResponse(context);
             return updatedOk;
         }
 
@@ -256,17 +273,46 @@ namespace RESTServer.Routing
             }
             else
             {
-                itemAdded = (T)methodInfo.Method.Invoke(handler, null);
+                itemAdded = (T)methodInfo.Method.Invoke(handler, new object[] { item });
             }
 
             bool result = await restMethodActioner.SetResponse<T>(context, itemAdded, serializationToUse);
             return result;
         }
 
+
+        private async Task<bool> HandleDelete<T, TKey>(DynamicMethodInfo methodInfo, object handler,
+            HttpListenerContext context, SerializationToUse serializationToUse)
+        {
+            var updatedOk = false;
+            TKey id = await restMethodActioner.ExtractId<TKey>(context.Request);
+
+            if (methodInfo.IsTask)
+            {
+                updatedOk  = await (Task<bool>)methodInfo.Method.Invoke(handler, new object[] { id });
+            }
+            else
+            {
+                updatedOk = (bool)methodInfo.Method.Invoke(handler, new object[] { id });
+            }
+            updatedOk &= await restMethodActioner.SetOkResponse(context);
+            return updatedOk;
+        }
+
+
         private bool MethodHasSingleCorrectParameterOfType<TKey>(MethodInfo method)
         {
             var parameters = method.GetParameters();
             return parameters.Count() == 1 && parameters[0].ParameterType == typeof (TKey);
+        }
+
+        private bool MethodHasCorrectPutParameters<T,TKey>(MethodInfo method)
+        {
+            var parameters = method.GetParameters();
+            return parameters.Count() == 2 &&
+                   parameters[0].ParameterType == typeof (TKey) &&
+                   parameters[1].ParameterType == typeof (T);
+
         }
 
 

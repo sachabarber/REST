@@ -94,7 +94,7 @@ namespace RESTServer.Routing
             }
             else
             {
-                TKey id = restMethodActioner.ExtractId<TKey>(context.Request);
+                TKey id = await restMethodActioner.ExtractId<TKey>(context.Request);
                 var item = await actualHandler.Get(id);
                 result = await restMethodActioner.SetResponse<T>(context, item, serializationToUse);
             }
@@ -112,28 +112,18 @@ namespace RESTServer.Routing
   
         private async Task<bool> HandleDelete<T, TKey>(IVerbHandler<T, TKey> actualHandler, HttpListenerContext context, SerializationToUse serializationToUse)
         {
-            TKey id = restMethodActioner.ExtractId<TKey>(context.Request);
+            TKey id = await restMethodActioner.ExtractId<TKey>(context.Request);
             bool updatedOk = await actualHandler.Delete(id);
-            HttpListenerResponse response = context.Response;
-            using (System.IO.Stream output = response.OutputStream)
-            {
-                response.StatusCode = 200;
-                response.StatusDescription = Enum.GetName(typeof(HttpStatusCode), HttpStatusCode.OK);
-            }
+            updatedOk &= await restMethodActioner.SetOkResponse(context);
             return updatedOk;
         }
 
         private async Task<bool> HandlePut<T, TKey>(IVerbHandler<T, TKey> actualHandler, HttpListenerContext context, SerializationToUse serializationToUse)
         {
-            TKey id = restMethodActioner.ExtractId<TKey>(context.Request);
+            TKey id = await restMethodActioner.ExtractId<TKey>(context.Request);
             T item = await restMethodActioner.ExtractContent<T>(context.Request, serializationToUse);
             bool updatedOk = await actualHandler.Put(id,item);
-            HttpListenerResponse response = context.Response;
-            using (System.IO.Stream output = response.OutputStream)
-            {
-                response.StatusCode = 200;
-                response.StatusDescription = Enum.GetName(typeof(HttpStatusCode), HttpStatusCode.OK);
-            }
+            updatedOk &= await restMethodActioner.SetOkResponse(context);
             return updatedOk;
         }
 

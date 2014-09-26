@@ -78,7 +78,8 @@ namespace RESTServer.Routing
         }
 
 
-        public async Task<bool> SetResponse<T>(HttpListenerContext context, T result, SerializationToUse serializationToUse)
+        public async Task<bool> SetResponse<T>(HttpListenerContext context, T result, 
+            SerializationToUse serializationToUse)
         {
             HttpListenerResponse response = context.Response;
             using (System.IO.Stream output = response.OutputStream)
@@ -93,6 +94,16 @@ namespace RESTServer.Routing
             return true;
         }
 
+        public async Task<bool> SetOkResponse(HttpListenerContext context)
+        {
+            HttpListenerResponse response = context.Response;
+            using (System.IO.Stream output = response.OutputStream)
+            {
+                response.StatusCode = 200;
+                response.StatusDescription = Enum.GetName(typeof(HttpStatusCode), HttpStatusCode.OK);
+            }
+            return true;
+        }
 
         public bool IsGetAll(string url)
         {
@@ -117,7 +128,7 @@ namespace RESTServer.Routing
             }            
         }
 
-        public TKey ExtractId<TKey>(HttpListenerRequest request)
+        public async Task<TKey> ExtractId<TKey>(HttpListenerRequest request)
         {
             var cutPoint = request.RawUrl.LastIndexOf(@"/") + 1;
             var rawId = request.RawUrl.Substring(cutPoint);

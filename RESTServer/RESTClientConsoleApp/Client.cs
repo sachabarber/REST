@@ -55,8 +55,8 @@ namespace RESTClientConsoleApp
 
             //await userClient.GetUser(1);
             //await userClient.GetUsers();
-            await userClient.PostUser();
-            //await userClient.PutUser();
+            //await userClient.PostUser();
+            await userClient.PutUser();
             //await userClient.DeleteUser();
         }
 
