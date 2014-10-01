@@ -29,38 +29,50 @@ namespace RESTServer.Utils.Client
 
         public async Task<RESTResponse<T>> Get<T>(string url, SerializationToUse serializationToUse)
         {
-            string response = DownloadString(url);
-            return await CreateResponse<T>(response, serializationToUse);
+            return await Task.Run(async () =>
+            {
+                string response = await Task.Run(() => DownloadString(url));
+                return await CreateResponse<T>(response, serializationToUse);
+            });
         }
 
         public async Task<RESTResponse<T>> Post<T>(string url, T item, SerializationToUse serializationToUse)
         {
-            byte[] responsebytes = await UploadDataForMethod(url, "POST", item, serializationToUse);
-            string responsebody = string.Empty;
-            if (serializationToUse == SerializationToUse.Xml)
+            return await Task.Run(async () =>
             {
-                responsebody = Encoding.UTF8.GetString(responsebytes);
-            }
-            if (serializationToUse == SerializationToUse.Json)
-            {
-                responsebody = Encoding.UTF8.GetString(responsebytes);
-            }
-            return await CreateResponse<T>(responsebody, serializationToUse);
+                byte[] responsebytes = await UploadDataForMethod(url, "POST", item, serializationToUse);
+                string responsebody = string.Empty;
+                if (serializationToUse == SerializationToUse.Xml)
+                {
+                    responsebody = Encoding.UTF8.GetString(responsebytes);
+                }
+                if (serializationToUse == SerializationToUse.Json)
+                {
+                    responsebody = Encoding.UTF8.GetString(responsebytes);
+                }
+                return await CreateResponse<T>(responsebody, serializationToUse);
+            });
         }
 
         public async Task<HttpStatusCode> Delete(string url)
         {
-            var request = WebRequest.Create(url);
-            request.Method = "DELETE";
-            var response = await request.GetResponseAsync();
-            return ((HttpWebResponse)response).StatusCode;
+            return await Task.Run(async () =>
+            {
+                var request = WebRequest.Create(url);
+                request.Method = "DELETE";
+                var response = await request.GetResponseAsync();
+                return ((HttpWebResponse) response).StatusCode;
+            });
         }
 
 
         public async Task<HttpStatusCode> Put<T>(string url, T item, SerializationToUse serializationToUse)
         {
-            await UploadDataForMethod(url, "PUT", item, serializationToUse);
-            return await StatusCode();
+            return await Task.Run(async () =>
+            {
+                await UploadDataForMethod(url, "PUT", item, serializationToUse);
+                return await StatusCode();
+            });
         }
 
 
@@ -68,67 +80,69 @@ namespace RESTServer.Utils.Client
 
         private async Task<byte[]> UploadDataForMethod<T>(string url, string httpMethod, T item, SerializationToUse serializationToUse)
         {
-            if (serializationToUse == SerializationToUse.Xml)
+            return await Task.Run(async () =>
             {
-                Headers.Add("Content-Type", "application/xml");
-                var serialized = await xmlPipelineSerializer.SerializeAsBytes(item);
-                return UploadData(url, httpMethod, serialized);
-            }
-            if (serializationToUse == SerializationToUse.Json)
-            {
-                Headers.Add("Content-Type", "application/json");
-                var serialized = await jsonPipelineSerializer.SerializeAsBytes(item);
-                return UploadData(url, httpMethod, serialized);
-            }
-            throw new InvalidOperationException("You need to specify either Xml or Json serialization");
+                if (serializationToUse == SerializationToUse.Xml)
+                {
+                    Headers.Add("Content-Type", "application/xml");
+                    var serialized = await xmlPipelineSerializer.SerializeAsBytes(item);
+                    return await Task.Run(() => UploadData(url, httpMethod, serialized));
+                }
+                if (serializationToUse == SerializationToUse.Json)
+                {
+                    Headers.Add("Content-Type", "application/json");
+                    var serialized = await jsonPipelineSerializer.SerializeAsBytes(item);
+                    return await Task.Run(() => UploadData(url, httpMethod, serialized));
+                }
+                throw new InvalidOperationException("You need to specify either Xml or Json serialization");
+            });
 
         }
 
 
         private async Task<HttpStatusCode> StatusCode()
         {
-            HttpStatusCode result;
-
-            if (this.request == null)
+            return await Task.Run(() =>
             {
+                if (this.request == null)
+                {
+                    throw (new InvalidOperationException(
+                        "Unable to retrieve the status code, maybe you haven't made a request yet."));
+                }
+
+                HttpWebResponse response = base.GetWebResponse(this.request) as HttpWebResponse;
+
+                if (response != null)
+                {
+                    return response.StatusCode;
+                }
                 throw (new InvalidOperationException(
                     "Unable to retrieve the status code, maybe you haven't made a request yet."));
-            }
-
-            HttpWebResponse response = base.GetWebResponse(this.request) as HttpWebResponse;
-
-            if (response != null)
-            {
-                result = response.StatusCode;
-            }
-            else
-            {
-                throw (new InvalidOperationException(
-                    "Unable to retrieve the status code, maybe you haven't made a request yet."));
-            }
-
-            return result;
+            });
         }
 
         private async Task<RESTResponse<T>> CreateResponse<T>(string response, SerializationToUse serializationToUse)
         {
-            if (serializationToUse == SerializationToUse.Xml)
+            return await Task.Run(async () =>
             {
-                return new RESTResponse<T>()
+                if (serializationToUse == SerializationToUse.Xml)
                 {
-                    Content = await xmlPipelineSerializer.Deserialize<T>(response),
-                    StatusCode = await StatusCode()
-                };
-            }
-            if (serializationToUse == SerializationToUse.Json)
-            {
-                return new RESTResponse<T>()
+                    return new RESTResponse<T>()
+                    {
+                        Content = await xmlPipelineSerializer.Deserialize<T>(response),
+                        StatusCode = await StatusCode()
+                    };
+                }
+                if (serializationToUse == SerializationToUse.Json)
                 {
-                    Content = await jsonPipelineSerializer.Deserialize<T>(response),
-                    StatusCode = await StatusCode()
-                };
-            }
-            throw new InvalidOperationException("You need to specify either Xml or Json serialization");
+                    return new RESTResponse<T>()
+                    {
+                        Content = await jsonPipelineSerializer.Deserialize<T>(response),
+                        StatusCode = await StatusCode()
+                    };
+                }
+                throw new InvalidOperationException("You need to specify either Xml or Json serialization");
+            });
         }
 
     }

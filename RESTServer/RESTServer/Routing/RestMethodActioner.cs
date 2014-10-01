@@ -17,92 +17,108 @@ namespace RESTServer.Routing
         private ISerializer jsonPipelineSerializer = new JsonPipelineSerializer();
 
 
-        public bool IsUrlMatch(string baseRoute, string requestUrl, string httpMethod)
+        public async Task<bool> IsUrlMatch(string baseRoute, string requestUrl, string httpMethod)
         {
-            string restToken = baseRoute.Replace(@"/", "");
-            string pattern = string.Format("^(\\/{0}\\/)([1-9]+[0-9]*)$", restToken);
-            Regex regEx = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-            Match m = regEx.Match(requestUrl);
-
-
-            if (httpMethod == "POST")
+            return await Task.Run(() =>
             {
-                return requestUrl == baseRoute;
-            }
+                bool result = false;
+                string restToken = baseRoute.Replace(@"/", "");
+                string pattern = string.Format("^(\\/{0}\\/)([1-9]+[0-9]*)$", restToken);
+                Regex regEx = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+                Match m = regEx.Match(requestUrl);
 
-            if (httpMethod == "GET")
-            {
-                bool validRoute1 = requestUrl == baseRoute;
-                bool validRoute2 = m.Success;
-                return validRoute1 || validRoute2;
-            }
 
-            if (httpMethod == "PUT" || httpMethod == "DELETE")
-            {
-                bool validRoute1 = requestUrl == baseRoute;
-                bool validRoute2 = m.Success;
-                return validRoute1 || validRoute2;
-            }
+                if (httpMethod == "POST")
+                {
+                    result= requestUrl == baseRoute;
+                }
 
-            return false;
+                if (httpMethod == "GET")
+                {
+                    bool validRoute1 = requestUrl == baseRoute;
+                    bool validRoute2 = m.Success;
+                    result= validRoute1 || validRoute2;
+                }
+
+                if (httpMethod == "PUT" || httpMethod == "DELETE")
+                {
+                    bool validRoute1 = requestUrl == baseRoute;
+                    bool validRoute2 = m.Success;
+                    result= validRoute1 || validRoute2;
+                }
+
+                return result;
+            });
         }
 
         public async Task<RouteResult> FindHandler(Type handlerTypeRequired,
             HttpListenerContext context, IList<IHandler> handlers, bool isDynamicHandler)
         {
-            var httpMethod = context.Request.HttpMethod;
-            var url = context.Request.RawUrl;
-            RouteResult result = new RouteResult();
 
-            foreach (var handler in handlers)
+            return await Task.Run(async () =>
             {
-                if (handler.GetType().GetInterfaces().Any(x => x.Name == handlerTypeRequired.Name))
+                var httpMethod = context.Request.HttpMethod;
+                var url = context.Request.RawUrl;
+                RouteResult result = new RouteResult();
+                foreach (var handler in handlers)
                 {
-                    var routeBase = (RouteBaseAttribute[])handler.GetType()
-                        .GetCustomAttributes(typeof(RouteBaseAttribute), false);
-
-                    if (routeBase.Length > 0)
+                    if (handler.GetType().GetInterfaces().Any(x => x.Name == handlerTypeRequired.Name))
                     {
-                        bool isBaseMatch = url.StartsWith(routeBase[0].UrlBase);
-                        bool isUrlMatch = IsUrlMatch(routeBase[0].UrlBase, url, httpMethod);
-                        if (isBaseMatch && (isUrlMatch || isDynamicHandler))
+                        var routeBase = (RouteBaseAttribute[]) handler.GetType()
+                            .GetCustomAttributes(typeof (RouteBaseAttribute), false);
+
+                        if (routeBase.Length > 0)
                         {
-                            result.SerializationToUse = routeBase[0].SerializationToUse;
-                            result.Handler = handler;
-                            break;
+                            bool isBaseMatch = url.StartsWith(routeBase[0].UrlBase);
+                            bool isUrlMatch = await IsUrlMatch(routeBase[0].UrlBase, url, httpMethod);
+                            if (isBaseMatch && (isUrlMatch || isDynamicHandler))
+                            {
+                                result.SerializationToUse = routeBase[0].SerializationToUse;
+                                result.Handler = handler;
+                                break;
+                            }
                         }
                     }
                 }
-            }
-            return result;
+                return result;
+
+            });
+
         }
 
 
         public async Task<bool> SetResponse<T>(HttpListenerContext context, T result, 
             SerializationToUse serializationToUse)
         {
-            HttpListenerResponse response = context.Response;
-            using (System.IO.Stream output = response.OutputStream)
+            return await Task.Run(async () =>
             {
-                ISerializer serializer = ObtainSerializer(serializationToUse, context.Request.ContentType);
-                string serialized = await serializer.Serialize<T>(result);
-                var buffer = Encoding.UTF8.GetBytes(serialized);
-                output.Write(buffer, 0, buffer.Length);
-                response.StatusCode = 200;
-                response.StatusDescription = Enum.GetName(typeof(HttpStatusCode), HttpStatusCode.OK);
-            }
-            return true;
+                HttpListenerResponse response = context.Response;
+                using (System.IO.Stream output = response.OutputStream)
+                {
+                    ISerializer serializer = ObtainSerializer(serializationToUse, context.Request.ContentType);
+                    string serialized = await serializer.Serialize<T>(result);
+                    var buffer = Encoding.UTF8.GetBytes(serialized);
+                    output.Write(buffer, 0, buffer.Length);
+                    response.StatusCode = 200;
+                    response.StatusDescription = Enum.GetName(typeof (HttpStatusCode), HttpStatusCode.OK);
+                }
+                return true;
+            });
+
         }
 
         public async Task<bool> SetOkResponse(HttpListenerContext context)
         {
-            HttpListenerResponse response = context.Response;
-            using (System.IO.Stream output = response.OutputStream)
+            return await Task.Run(async () =>
             {
-                response.StatusCode = 200;
-                response.StatusDescription = Enum.GetName(typeof(HttpStatusCode), HttpStatusCode.OK);
-            }
-            return true;
+                HttpListenerResponse response = context.Response;
+                using (System.IO.Stream output = response.OutputStream)
+                {
+                    response.StatusCode = 200;
+                    response.StatusDescription = Enum.GetName(typeof (HttpStatusCode), HttpStatusCode.OK);
+                }
+                return true;
+            });
         }
 
         public bool IsGetAll(string url)
@@ -113,26 +129,32 @@ namespace RESTServer.Routing
         public async Task<T> ExtractContent<T>(HttpListenerRequest request, 
             SerializationToUse serializationToUse)
         {
-            using (StreamReader sr = new StreamReader(request.InputStream))
+            return await Task.Run(async () =>
             {
-                string rawData = sr.ReadToEnd();
-                switch(serializationToUse)
+                using (StreamReader sr = new StreamReader(request.InputStream))
                 {
-                    case SerializationToUse.Json:
-                        return await DeSerialize<T>(rawData,jsonPipelineSerializer);
-                    case SerializationToUse.Xml:
-                        return await DeSerialize<T>(rawData, xmlPipelineSerializer);
-                    default:
-                        return await ObtainDeSerializedItemFromBodyContentType<T>(rawData, request.ContentType);
+                    string rawData = sr.ReadToEnd();
+                    switch (serializationToUse)
+                    {
+                        case SerializationToUse.Json:
+                            return await DeSerialize<T>(rawData, jsonPipelineSerializer);
+                        case SerializationToUse.Xml:
+                            return await DeSerialize<T>(rawData, xmlPipelineSerializer);
+                        default:
+                            return await ObtainDeSerializedItemFromBodyContentType<T>(rawData, request.ContentType);
+                    }
                 }
-            }            
+            });
         }
 
         public async Task<TKey> ExtractId<TKey>(HttpListenerRequest request)
         {
-            var cutPoint = request.RawUrl.LastIndexOf(@"/") + 1;
-            var rawId = request.RawUrl.Substring(cutPoint);
-            return (TKey)Convert.ChangeType(rawId, typeof(TKey));
+            return await Task.Run(async () =>
+            {
+                var cutPoint = request.RawUrl.LastIndexOf(@"/") + 1;
+                var rawId = request.RawUrl.Substring(cutPoint);
+                return (TKey)Convert.ChangeType(rawId, typeof(TKey));
+            });
         }
 
 

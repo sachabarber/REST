@@ -25,19 +25,23 @@ namespace RESTClientConsoleApp
         /// </summary>
         public async Task GetAccount(int id)
         {
-            using (RESTWebClient client = new RESTWebClient())
+            await Task.Run(async () =>
             {
-                string getUrl = string.Format("http://localhost:8001/accounts/{0}", id);
+                using (RESTWebClient client = new RESTWebClient())
+                {
+                    string getUrl = string.Format("http://localhost:8001/accounts/{0}", id);
 
-                //the server AccountHandler [RouteBaseAttribute] is set to return Json, 
-                //so we need to deserialize it as Json
-                var response = await client.Get<Account>(getUrl, SerializationToUse.Json);
-                Console.WriteLine("Http : GET/{id}");
-                Console.WriteLine("Status Code : {0}", response.StatusCode);
-                Console.WriteLine(getUrl);
-                Console.WriteLine(response.Content);
-                Console.WriteLine("=================================");
-            }
+                    //the server AccountHandler [RouteBaseAttribute] is set to return Json, 
+                    //so we need to deserialize it as Json
+                    var response = await client.Get<Account>(getUrl, SerializationToUse.Json);
+                    Console.WriteLine("Http : GET/{id}");
+                    Console.WriteLine("Status Code : {0}", response.StatusCode);
+                    Console.WriteLine(getUrl);
+                    Console.WriteLine(response.Content);
+                    Console.WriteLine("=================================");
+                }
+            });
+
         }
 
         /// <summary>
@@ -46,20 +50,23 @@ namespace RESTClientConsoleApp
         /// </summary>
         public async Task GetAccounts()
         {
-            using (RESTWebClient client = new RESTWebClient())
+            await Task.Run(async () =>
             {
-                string getUrl = "http://localhost:8001/accounts";
+                using (RESTWebClient client = new RESTWebClient())
+                {
+                    string getUrl = "http://localhost:8001/accounts";
 
-                //the server AccountHandler [RouteBaseAttribute] is set to return Json, 
-                //so we need to deserialize it as Json 
-                var response = await client.Get<List<Account>>(getUrl, SerializationToUse.Json);
+                    //the server AccountHandler [RouteBaseAttribute] is set to return Json, 
+                    //so we need to deserialize it as Json 
+                    var response = await client.Get<List<Account>>(getUrl, SerializationToUse.Json);
 
-                Console.WriteLine("Http : GET");
-                Console.WriteLine("Status Code : {0}", response.StatusCode);
-                Console.WriteLine(getUrl);
-                Console.WriteLine(response.Content.Count);
-                Console.WriteLine("=================================");
-            }
+                    Console.WriteLine("Http : GET");
+                    Console.WriteLine("Status Code : {0}", response.StatusCode);
+                    Console.WriteLine(getUrl);
+                    Console.WriteLine(response.Content.Count);
+                    Console.WriteLine("=================================");
+                }
+            });
         }
 
         /// <summary>
@@ -67,23 +74,26 @@ namespace RESTClientConsoleApp
         /// </summary>
         public async Task PostAccount()
         {
-            using (RESTWebClient client = new RESTWebClient())
+            await Task.Run(async () =>
             {
-                string postUrl = "http://localhost:8001/accounts";
-                Account newAccount = new Account();
-                newAccount.SortCode = string.Format("SortCode_{0}", DateTime.Now.Ticks);
-                newAccount.AccountNumber = string.Format("AccountNumber_{0}", DateTime.Now.Ticks);
+                using (RESTWebClient client = new RESTWebClient())
+                {
+                    string postUrl = "http://localhost:8001/accounts";
+                    Account newAccount = new Account();
+                    newAccount.SortCode = string.Format("SortCode_{0}", DateTime.Now.Ticks);
+                    newAccount.AccountNumber = string.Format("AccountNumber_{0}", DateTime.Now.Ticks);
 
-                //the server AccountHandler [RouteBaseAttribute] is set to return Json, 
-                //so we need to deserialize it as Json 
-                var response = await client.Post<Account>(postUrl, newAccount, SerializationToUse.Json);
-                Console.WriteLine("Http : POST");
-                Console.WriteLine("Status Code : {0}", response.StatusCode);
-                Console.WriteLine(postUrl);
-                Console.WriteLine(response.Content);
-                Console.WriteLine("=================================");
+                    //the server AccountHandler [RouteBaseAttribute] is set to return Json, 
+                    //so we need to deserialize it as Json 
+                    var response = await client.Post<Account>(postUrl, newAccount, SerializationToUse.Json);
+                    Console.WriteLine("Http : POST");
+                    Console.WriteLine("Status Code : {0}", response.StatusCode);
+                    Console.WriteLine(postUrl);
+                    Console.WriteLine(response.Content);
+                    Console.WriteLine("=================================");
 
-            }
+                }
+            });
         }
 
         /// <summary>
@@ -91,83 +101,89 @@ namespace RESTClientConsoleApp
         /// </summary>
         public async Task PutAccount()
         {
-            using (RESTWebClient client = new RESTWebClient())
+            await Task.Run(async () =>
             {
-
-                Console.WriteLine("OBTAINING accounts/1");
-                string getUrl = string.Format("http://localhost:8001/accounts/{0}", 1);
-
-                //the server AccountHandler [RouteBaseAttribute] is set to return Json, 
-                //so we need to deserialize it as Json 
-                var response = await client.Get<Account>(getUrl, SerializationToUse.Json);
-                var account = response.Content;
-                Console.WriteLine(account);
-
-                string newAccountNumber = string.Format("{0}_Modified_{1}", 
-                    account.AccountNumber, DateTime.Now.Ticks);
-                account.AccountNumber = newAccountNumber;
-
-                string putUrl = string.Format("http://localhost:8001/accounts/{0}", 1);
-
-                //the server AccountHandler [RouteBaseAttribute] is set to return Json, 
-                //so we need to deserialize it as Json 
-                var statusCode = await client.Put(putUrl, account, SerializationToUse.Json);
-                Console.WriteLine("Http : PUT");
-                Console.WriteLine("Status Code : {0}", statusCode);
-                Console.WriteLine(putUrl);
-
-                if (statusCode == HttpStatusCode.OK)
+                using (RESTWebClient client = new RESTWebClient())
                 {
-                    Console.WriteLine("OBTAINING accounts/1 again");
-                    response = await client.Get<Account>(getUrl, SerializationToUse.Json);
-                    account = response.Content;
+
+                    Console.WriteLine("OBTAINING accounts/1");
+                    string getUrl = string.Format("http://localhost:8001/accounts/{0}", 1);
+
+                    //the server AccountHandler [RouteBaseAttribute] is set to return Json, 
+                    //so we need to deserialize it as Json 
+                    var response = await client.Get<Account>(getUrl, SerializationToUse.Json);
+                    var account = response.Content;
                     Console.WriteLine(account);
 
+                    string newAccountNumber = string.Format("{0}_Modified_{1}",
+                        account.AccountNumber, DateTime.Now.Ticks);
+                    account.AccountNumber = newAccountNumber;
+
+                    string putUrl = string.Format("http://localhost:8001/accounts/{0}", 1);
+
+                    //the server AccountHandler [RouteBaseAttribute] is set to return Json, 
+                    //so we need to deserialize it as Json 
+                    var statusCode = await client.Put(putUrl, account, SerializationToUse.Json);
+                    Console.WriteLine("Http : PUT");
+                    Console.WriteLine("Status Code : {0}", statusCode);
+                    Console.WriteLine(putUrl);
+
+                    if (statusCode == HttpStatusCode.OK)
+                    {
+                        Console.WriteLine("OBTAINING accounts/1 again");
+                        response = await client.Get<Account>(getUrl, SerializationToUse.Json);
+                        account = response.Content;
+                        Console.WriteLine(account);
+
+                    }
+                    else
+                    {
+                        Console.WriteLine("PUT Failed");
+                    }
+                    Console.WriteLine("=================================");
                 }
-                else
-                {
-                    Console.WriteLine("PUT Failed");
-                }
-                Console.WriteLine("=================================");
-            }
+            });
         }
 
         public async Task DeleteAccount()
         {
-            using (RESTWebClient client = new RESTWebClient())
+            await Task.Run(async () =>
             {
-
-                Console.WriteLine("OBTAINING accounts");
-                string getUrl = string.Format("http://localhost:8001/accounts");
-
-                //the server AccountHandler [RouteBaseAttribute] is set to return Json, 
-                //so we need to deserialize it as Json 
-                var response = await client.Get<List<Account>>(getUrl, SerializationToUse.Json);
-                Console.WriteLine("There are currently {0} accounts", response.Content.Count);
-
-                string deleteUrl = string.Format("http://localhost:8001/accounts/{0}", 1);
-
-                var statusCode = await client.Delete(deleteUrl);
-                Console.WriteLine("Http : DELETE");
-                Console.WriteLine("Status Code : {0}", statusCode);
-                Console.WriteLine(deleteUrl);
-
-                if (statusCode == HttpStatusCode.OK)
+                using (RESTWebClient client = new RESTWebClient())
                 {
-                    Console.WriteLine("OBTAINING accounts again");
+
+                    Console.WriteLine("OBTAINING accounts");
+                    string getUrl = string.Format("http://localhost:8001/accounts");
+
                     //the server AccountHandler [RouteBaseAttribute] is set to return Json, 
                     //so we need to deserialize it as Json 
-                    response = await client.Get<List<Account>>("http://localhost:8001/accounts", 
-                        SerializationToUse.Json);
+                    var response = await client.Get<List<Account>>(getUrl, SerializationToUse.Json);
                     Console.WriteLine("There are currently {0} accounts", response.Content.Count);
 
+                    string deleteUrl = string.Format("http://localhost:8001/accounts/{0}", 1);
+
+                    var statusCode = await client.Delete(deleteUrl);
+                    Console.WriteLine("Http : DELETE");
+                    Console.WriteLine("Status Code : {0}", statusCode);
+                    Console.WriteLine(deleteUrl);
+
+                    if (statusCode == HttpStatusCode.OK)
+                    {
+                        Console.WriteLine("OBTAINING accounts again");
+                        //the server AccountHandler [RouteBaseAttribute] is set to return Json, 
+                        //so we need to deserialize it as Json 
+                        response = await client.Get<List<Account>>("http://localhost:8001/accounts",
+                            SerializationToUse.Json);
+                        Console.WriteLine("There are currently {0} accounts", response.Content.Count);
+
+                    }
+                    else
+                    {
+                        Console.WriteLine("DELETE Failed");
+                    }
+                    Console.WriteLine("=================================");
                 }
-                else
-                {
-                    Console.WriteLine("DELETE Failed");
-                }
-                Console.WriteLine("=================================");
-            }
+            });
         }
 
     }

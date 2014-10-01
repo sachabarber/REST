@@ -15,15 +15,20 @@ namespace RESTServer.Routing
         public override async Task<bool> ActionRequest(HttpListenerContext context, 
             IList<IHandler> handlers)
         {
-            HttpListenerResponse response = context.Response;
-            using (System.IO.Stream output = response.OutputStream)
+            return await Task.Run(async () =>
             {
-                var buffer = Encoding.UTF8.GetBytes("Not Found");
-                output.Write(buffer, 0, buffer.Length);
-                response.StatusCode = 404;
-                response.StatusDescription = Enum.GetName(typeof(HttpStatusCode), HttpStatusCode.NotFound);
-            }
-            return true;
+
+                HttpListenerResponse response = context.Response;
+                using (System.IO.Stream output = response.OutputStream)
+                {
+                    var buffer = Encoding.UTF8.GetBytes("Not Found");
+                    output.Write(buffer, 0, buffer.Length);
+                    response.StatusCode = 404;
+                    response.StatusDescription = Enum.GetName(typeof (HttpStatusCode),
+                        HttpStatusCode.NotFound);
+                }
+                return true;
+            });
         }
     }
 }

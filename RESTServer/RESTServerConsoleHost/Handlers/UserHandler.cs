@@ -26,32 +26,35 @@ namespace RESTServerConsoleHost.Handlers
         [Route("/GetUserByTheirId/{0}", HttpMethod.Get)]
         public async Task<User> GetUserByTheirId(int id)
         {
-            return userRepository.Get(id);
+            return await Task.Run(() => userRepository.Get(id));
         }
 
         [Route("/GetAllUsers", HttpMethod.Get)]
         public async Task<IEnumerable<User>> GetAllUsers()
         {
-            return userRepository.GetAll();
+            return await Task.Run(() => userRepository.GetAll());
         }
 
         [Route("/AddASingleUser", HttpMethod.Post)]
         public async Task<User> AddASingleUser(User item)
         {
-            return userRepository.Add(item);
+            return await Task.Run(() => userRepository.Add(item));
         }
 
         [Route("/UpdateAUserUsingId/{0}", HttpMethod.Put)]
         public async Task<bool> UpdateTheUserWithId(int id, User item)
         {
-            item.Id = id;
-            return userRepository.Update(item);
+            return await Task.Run(() =>
+            {
+                item.Id = id;
+                return userRepository.Update(item);
+            });
         }
 
         [Route("/DeleteUserByTheirId/{0}", HttpMethod.Delete)]
         public async Task<bool> DeleteAUser(int id)
         {
-            return userRepository.Delete(id);
+            return await Task.Run(() => userRepository.Delete(id));
         }
    
         #endregion

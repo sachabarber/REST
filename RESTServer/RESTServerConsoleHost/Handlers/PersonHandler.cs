@@ -22,28 +22,32 @@ namespace RESTServerConsoleHost.Handlers
 
         public async Task<Person> Get(int id)
         {
-            return personRepository.Get(id);
+            return await Task.Run(() => personRepository.Get(id));
         }
 
         public async Task<IEnumerable<Person>> Get()
         {
-            return personRepository.GetAll();
+            return await Task.Run(() => personRepository.GetAll());
         }
 
         public async Task<Person> Post(Person item)
         {
-            return personRepository.Add(item);
+            return await Task.Run(() => personRepository.Add(item));
         }
 
         public async Task<bool> Put(int id, Person item)
         {
-            item.Id = id;
-            return personRepository.Update(item);
+            
+            return await Task.Run(() =>
+            {
+                item.Id = id;
+                return personRepository.Update(item);
+            });
         }
 
         public async Task<bool> Delete(int id)
         {
-            return personRepository.Delete(id);
+            return await Task.Run(() => personRepository.Delete(id));
         }
 
         #endregion
