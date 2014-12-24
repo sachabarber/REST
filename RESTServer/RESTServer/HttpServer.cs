@@ -17,6 +17,7 @@ namespace RESTServer
         private readonly HttpListener listener = new HttpListener();
         private readonly int accepts = 4;
         private readonly IDependencyResolver dependencyResolver;
+        private Semaphore sem;
 
         public HttpServer(IDependencyResolver dependencyResolver, int accepts = 4)
         {
@@ -35,44 +36,43 @@ namespace RESTServer
             // Add the server bindings:
             foreach (var prefix in uriPrefixes)
                 listener.Prefixes.Add(prefix);
-
-
             listener.Start();
-
-
 
             //Accept connections:
             //1. Higher values mean more connections can be maintained yet at a 
             //   much slower average response time; fewer connections will be rejected.
             //2. Lower values mean less connections can be maintained yet at a 
             //   much faster average response time; more connections will be rejected.
-            var sem = new Semaphore(accepts, accepts);
+            sem = new Semaphore(accepts, accepts);
+            await RunServer();
+
+        }
 
 
+        private async Task RunServer()
+        {
             while (true)
             {
-                    sem.WaitOne();
-
-                    await listener.GetContextAsync().ContinueWith(async (t) =>
-                    {
-                        string errMessage;
-
-                        try
-                        {
-                            sem.Release();
-                            var context = await t;
-                            await Task.Run(() => ProcessRequest(context));
-                            return;
-                        }
-                        catch (Exception ex)
-                        {
-                            errMessage = ex.ToString();
-                        }
-
-                        await Console.Error.WriteLineAsync(errMessage);
-                    });
+                // Fall through until we've initialized all our connection listeners.
+                // When the semaphore blocks (its count reaches 0) we wait until a connection occurs, 
+                // upon which the semaphore is released and we create another connection "awaiter."
+                sem.WaitOne();
+                await StartConnectionListener();
             }
         }
+ 
+        private async Task StartConnectionListener()
+        {
+            // Wait for a connection
+            HttpListenerContext context = await listener.GetContextAsync();
+ 
+            // Allow a new connection listener to be set up.
+            sem.Release();
+
+            //process the current request
+            await ProcessRequest(context);
+        }
+
 
         private async Task<bool> ProcessRequest(HttpListenerContext context)
         {
